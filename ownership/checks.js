@@ -12,15 +12,24 @@
    Every finding carries its evidence: the sheet, the row, the entity name as
    written, and the document version. A finding without that is an opinion. */
 
-const F = (code, severity, entity, message, evidence, remedy) =>
-  ({ code, severity, entity, message, evidence, remedy });
+/* class distinguishes what the file settles from what it cannot.
+
+   defect   — determinable from the register alone. 105% ownership is wrong
+              whatever else is true. These are stated, not asked.
+   question — the register is internally consistent but incomplete. A 60%
+              holding recorded as equity may be correct under a shareholder
+              agreement the register does not hold. These go to a human.
+
+   Mixing the two in one list invites a client to dismiss both. */
+const F = (code, cls, severity, entity, message, evidence, remedy) =>
+  ({ code, class: cls, severity, entity, message, evidence, remedy });
 
 /* Rows arrive as: {sheet,row,code,name,country,parentCode,parentName,pct,from,to,method,notes} */
 
 export function missingIdentifier(rows) {
   return rows
     .filter(r => !r.code || !String(r.code).trim())
-    .map(r => F("OWN-01", "high", r.name,
+    .map(r => F("OWN-01", "question", "high", r.name,
       "No entity code. The entity cannot be matched to any other source.",
       [r], "Ask legal for the code, or confirm the entity is not yet registered."));
 }
@@ -35,7 +44,7 @@ export function duplicateCode(rows) {
   for (const [code, rs] of byCode) {
     const names = [...new Set(rs.map(r => r.name))];
     if (rs.length > 1 && names.length > 1 && !overlapping(rs).length)
-      out.push(F("OWN-02", "high", code,
+      out.push(F("OWN-02", "question", "high", code,
         `Same code recorded under ${names.length} different names: ${names.join(" / ")}. ` +
         `If these are one entity the holding is double counted; if two, one has the wrong code.`,
         rs, "Confirm which name is the legal name and retire the other row."));
@@ -69,7 +78,7 @@ export function conflictingPeriods(rows) {
   const out = [];
   for (const [code, rs] of byCode)
     for (const [a, b] of overlapping(rs))
-      out.push(F("OWN-03", "high", code,
+      out.push(F("OWN-03", "defect", "high", code,
         `Two different ownership percentages (${a.pct}% and ${b.pct}%) apply to overlapping ` +
         `periods under the same parent.`,
         [a, b], "Close the earlier period with an end date, or correct the percentage."));
@@ -95,7 +104,7 @@ export function percentagesDoNotSum(rows) {
     if (rs.length < 2) continue;
     const total = rs.reduce((n, r) => n + r.pct, 0);
     if (Math.abs(total - 100) > 0.01)
-      out.push(F("OWN-04", "high", rs[0].code,
+      out.push(F("OWN-04", "defect", "high", rs[0].code,
         `Holdings sum to ${total}%, not 100%, for the period from ${rs[0].from}.`,
         rs, "Identify the missing holder, or correct the percentages."));
   }
@@ -105,7 +114,7 @@ export function percentagesDoNotSum(rows) {
 export function ownershipOutOfRange(rows) {
   return rows
     .filter(r => r.pct != null && (r.pct < 0 || r.pct > 100))
-    .map(r => F("OWN-05", "high", r.code || r.name,
+    .map(r => F("OWN-05", "defect", "high", r.code || r.name,
       `Ownership recorded as ${r.pct}%.`,
       [r], "Correct the percentage at source."));
 }
@@ -113,7 +122,7 @@ export function ownershipOutOfRange(rows) {
 export function missingEffectiveDate(rows) {
   return rows
     .filter(r => r.parentCode && !r.from)
-    .map(r => F("OWN-06", "high", r.code || r.name,
+    .map(r => F("OWN-06", "question", "high", r.code || r.name,
       "No effective-from date. A mid-period acquisition cannot consolidate from the " +
       "acquisition date without one.",
       [r], "Ask legal for the acquisition or incorporation date."));
@@ -122,7 +131,7 @@ export function missingEffectiveDate(rows) {
 export function endBeforeStart(rows) {
   return rows
     .filter(r => r.from && r.to && r.to < r.from)
-    .map(r => F("OWN-07", "high", r.code || r.name,
+    .map(r => F("OWN-07", "defect", "high", r.code || r.name,
       `Effective to (${r.to}) precedes effective from (${r.from}).`,
       [r], "Correct the dates, or confirm whether the entity was disposed of."));
 }
@@ -132,7 +141,7 @@ export function parentNotInRegister(rows) {
   const seen = new Set();
   return rows
     .filter(r => r.parentCode && !codes.has(r.parentCode) && !seen.has(r.parentCode) && seen.add(r.parentCode))
-    .map(r => F("OWN-08", "high", r.code || r.name,
+    .map(r => F("OWN-08", "question", "high", r.code || r.name,
       `Parent ${r.parentCode} (${r.parentName || "unnamed"}) does not appear in this register.`,
       [r], "Obtain the parent entity, or correct the parent code."));
 }
@@ -150,7 +159,7 @@ export function ownershipCycle(rows) {
         const key = [...new Set(cycle)].sort().join(">");
         if (!reported.has(key)) {
           reported.add(key);
-          out.push(F("OWN-09", "high", cycle[0],
+          out.push(F("OWN-09", "defect", "high", cycle[0],
             `Circular ownership: ${cycle.join(" → ")}.`,
             rows.filter(r => cycle.includes(r.code)),
             "Confirm the true holding structure. A cycle cannot be consolidated as recorded."));
@@ -185,7 +194,7 @@ export function methodInconsistentWithHolding(rows) {
       return (t > 50 && /equity|associate/i.test(r.method)) ||
              (t < 20 && /full/i.test(r.method));
     })
-    .map(r => F("OWN-10", "medium", r.code || r.name,
+    .map(r => F("OWN-10", "question", "medium", r.code || r.name,
       `${r.pct}% holding recorded with "${r.method}" method. That combination usually indicates ` +
       `either a shareholder agreement the register does not capture, or an error.`,
       [r], "Ask accounting policy which is correct. Do not infer control from the percentage."));

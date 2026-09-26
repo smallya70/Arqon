@@ -1,0 +1,286 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ownership register assessment — Sample client</title>
+<style>
+ :root{--ink:#0f172a;--body:#334155;--mute:#64748b;--faint:#94a3b8;--line:#cbd5e1;
+       --hair:#e2e8f0;--page:#fff;--bad:#9f1239;--warn:#b45309}
+ *{box-sizing:border-box}
+ body{margin:0;background:var(--page);color:var(--ink);
+   font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+ .wrap{max-width:880px;margin:0 auto;padding:48px 32px 80px}
+ h1{font-size:28px;letter-spacing:-.02em;margin:0 0 6px;font-weight:600}
+ .sub{color:var(--mute);font-size:14px;margin:0 0 32px}
+ .figures{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+   border:1px solid var(--line);margin:0 0 36px}
+ .fig{background:#fff;padding:14px 16px}
+ .fig .n{font-size:26px;letter-spacing:-.02em}
+ .fig .l{font-size:12px;color:var(--mute);margin-top:3px}
+ h2{font-size:17px;margin:38px 0 4px}
+ .cls{color:var(--body);font-size:14px;margin:0 0 20px;max-width:72ch}
+ article{border:1px solid var(--line);margin:0 0 14px}
+ .fhead{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--hair);
+   background:#fafafa}
+ .code{font:12px ui-monospace,Menlo,Consolas,monospace;color:var(--mute)}
+ .ent{font-weight:600;font-size:14px}
+ .sev{margin-left:auto;font-size:11px;padding:2px 8px;color:#fff;background:var(--warn)}
+ .sev.high{background:var(--bad)}
+ .msg{margin:14px 16px;font-size:14.5px}
+ table.ev{width:calc(100% - 32px);margin:0 16px;border-collapse:collapse;font-size:12.5px}
+ table.ev th{text-align:left;color:var(--mute);font-weight:500;padding:5px 8px;
+   border-bottom:1px solid var(--line);white-space:nowrap}
+ table.ev td{padding:5px 8px;border-bottom:1px solid var(--hair)}
+ table.ev td.n,table.ev th.n{text-align:right}
+ .rem{margin:14px 16px;padding-left:12px;border-left:2px solid var(--ink);
+   font-size:13.5px;color:var(--body)}
+ .src{border-top:1px solid var(--line);margin-top:44px;padding-top:20px;
+   font-size:13px;color:var(--mute)}
+ .src table{border-collapse:collapse;margin-top:10px;font-size:12.5px}
+ .src td,.src th{padding:4px 12px 4px 0;text-align:left}
+ .none{color:var(--mute);font-size:14px}
+ @media print{.wrap{padding:0}article{break-inside:avoid}}
+</style></head><body><div class="wrap">
+
+<h1>Ownership register assessment</h1>
+<p class="sub">Sample client · ownership-register-v4.2.xlsx · version v4.2
+ · assessed 2026-09-26</p>
+
+<div class="figures">
+  <div class="fig"><div class="n">26</div><div class="l">ownership rows read</div></div>
+  <div class="fig"><div class="n">21</div><div class="l">distinct entity codes</div></div>
+  <div class="fig"><div class="n">5</div><div class="l">inconsistencies</div></div>
+  <div class="fig"><div class="n">6</div><div class="l">items needing confirmation</div></div>
+</div>
+
+<h2>Inconsistencies in the register</h2>
+<p class="cls">Determinable from the register alone. These are inconsistent however the business is structured, and do not need anyone's opinion to establish.</p>
+
+  <article>
+    <div class="fhead">
+      <span class="code">OWN-03</span>
+      <span class="ent">NBG-007</span>
+      <span class="sev high">high</span>
+    </div>
+    <p class="msg">Two different ownership percentages (75% and 80%) apply to overlapping periods under the same parent.</p>
+    <table class="ev">
+      <thead><tr><th>Sheet</th><th>Row</th><th>Entity as written</th><th>Holding</th>
+        <th>From</th><th>To</th><th>Method</th><th>Version</th></tr></thead>
+      <tbody><tr>
+        <td>Group Structure</td><td class="n">15</td>
+        <td>Northbridge Italia SpA</td><td class="n">75%</td>
+        <td>2020-01-01</td><td>—</td>
+        <td>Full</td><td>v4.2</td></tr><tr>
+        <td>Group Structure</td><td class="n">16</td>
+        <td>Northbridge Italia SpA</td><td class="n">80%</td>
+        <td>2021-06-01</td><td>—</td>
+        <td>Full</td><td>v4.2</td></tr>
+      </tbody></table>
+    <p class="rem">Close the earlier period with an end date, or correct the percentage.</p>
+  </article>
+  <article>
+    <div class="fhead">
+      <span class="code">OWN-04</span>
+      <span class="ent">NBG-008</span>
+      <span class="sev high">high</span>
+    </div>
+    <p class="msg">Holdings sum to 95%, not 100%, for the period from 2021-03-01.</p>
+    <table class="ev">
+      <thead><tr><th>Sheet</th><th>Row</th><th>Entity as written</th><th>Holding</th>
+        <th>From</th><th>To</th><th>Method</th><th>Version</th></tr></thead>
+      <tbody><tr>
+        <td>Group Structure</td><td class="n">17</td>
+        <td>Northbridge Nordic AB</td><td class="n">85%</td>
+        <td>2021-03-01</td><td>—</td>
+        <td>Full</td><td>v4.2</td></tr><tr>
+        <td>Group Structure</td><td class="n">18</td>
+        <td>Northbridge Nordic AB</td><td class="n">10%</td>
+        <td>2021-03-01</td><td>—</td>
+        <td>Full</td><td>v4.2</td></tr>
+      </tbody></table>
+    <p class="rem">Identify the missing holder, or correct the percentages.</p>
+  </article>
+  <article>
+    <div class="fhead">
+      <span class="code">OWN-05</span>
+      <span class="ent">NBG-013</span>
+      <span class="sev high">high</span>
+    </div>
+    <p class="msg">Ownership recorded as 105%.</p>
+    <table class="ev">
+      <thead><tr><th>Sheet</th><th>Row</th><th>Entity as written</th><th>Holding</th>
+        <th>From</th><th>To</th><th>Method</th><th>Version</th></tr></thead>
+      <tbody><tr>
+        <td>Group Structure</td><td class="n">24</td>
+        <td>Northbridge Vietnam Co Ltd</td><td class="n">105%</td>
+        <td>2023-05-01</td><td>—</td>
+        <td>Full</td><td>v4.2</td></tr>
+      </tbody></table>
+    <p class="rem">Correct the percentage at source.</p>
+  </article>
+  <article>
+    <div class="fhead">
+      <span class="code">OWN-07</span>
+      <span class="ent">NBG-012</span>
+      <span class="sev high">high</span>
+    </div>
+    <p class="msg">Effective to (2021-06-30) precedes effective from (2022-01-01).</p>
+    <table class="ev">
+      <thead><tr><th>Sheet</th><th>Row</th><th>Entity as written</th><th>Holding</th>
+        <th>From</th><th>To</th><th>Method</th><th>Version</th></tr></thead>
+      <tbody><tr>
+        <td>Group Structure</td><td class="n">23</td>
+        <td>Northbridge Thailand Ltd</td><td class="n">49%</td>
+        <td>2022-01-01</td><td>2021-06-30</td>
+        <td>Equity</td><td>v4.2</td></tr>
+      </tbody></table>
+    <p class="rem">Correct the dates, or confirm whether the entity was disposed of.</p>
+  </article>
+  <article>
+    <div class="fhead">
+      <span class="code">OWN-09</span>
+      <span class="ent">NBG-014</span>
+      <span class="sev high">high</span>
+    </div>
+    <p class="msg">Circular ownership: NBG-014 → NBG-015 → NBG-014.</p>
+    <table class="ev">
+      <thead><tr><th>Sheet</th><th>Row</th><th>Entity as written</th><th>Holding</th>
+        <th>From</th><th>To</th><th>Method</th><th>Version</th></tr></thead>
+      <tbody><tr>
+        <td>Group Structure</td><td class="n">25</td>
+        <td>Northbridge Treasury DAC</td><td class="n">100%</td>
+        <td>2020-01-01</td><td>—</td>
+        <td>Full</td><td>v4.2</td></tr><tr>
+        <td>Group Structure</td><td class="n">26</td>
+        <td>Northbridge Capital Ltd</td><td class="n">100%</td>
+        <td>2020-01-01</td><td>—</td>
+        <td>Full</td><td>v4.2</td></tr>
+      </tbody></table>
+    <p class="rem">Confirm the true holding structure. A cycle cannot be consolidated as recorded.</p>
+  </article>
+
+<h2>Items needing confirmation</h2>
+<p class="cls">The register is internally consistent but does not hold enough to settle these. Each needs a person to confirm or supply what is missing.</p>
+
+  <article>
+    <div class="fhead">
+      <span class="code">OWN-01</span>
+      <span class="ent">Northbridge Services Ireland</span>
+      <span class="sev high">high</span>
+    </div>
+    <p class="msg">No entity code. The entity cannot be matched to any other source.</p>
+    <table class="ev">
+      <thead><tr><th>Sheet</th><th>Row</th><th>Entity as written</th><th>Holding</th>
+        <th>From</th><th>To</th><th>Method</th><th>Version</th></tr></thead>
+      <tbody><tr>
+        <td>Group Structure</td><td class="n">19</td>
+        <td>Northbridge Services Ireland</td><td class="n">100%</td>
+        <td>2022-09-01</td><td>—</td>
+        <td>Full</td><td>v4.2</td></tr>
+      </tbody></table>
+    <p class="rem">Ask legal for the code, or confirm the entity is not yet registered.</p>
+  </article>
+  <article>
+    <div class="fhead">
+      <span class="code">OWN-01</span>
+      <span class="ent">Northbridge Poland sp. z o.o.</span>
+      <span class="sev high">high</span>
+    </div>
+    <p class="msg">No entity code. The entity cannot be matched to any other source.</p>
+    <table class="ev">
+      <thead><tr><th>Sheet</th><th>Row</th><th>Entity as written</th><th>Holding</th>
+        <th>From</th><th>To</th><th>Method</th><th>Version</th></tr></thead>
+      <tbody><tr>
+        <td>Group Structure</td><td class="n">20</td>
+        <td>Northbridge Poland sp. z o.o.</td><td class="n">100%</td>
+        <td>2023-02-01</td><td>—</td>
+        <td>Full</td><td>v4.2</td></tr>
+      </tbody></table>
+    <p class="rem">Ask legal for the code, or confirm the entity is not yet registered.</p>
+  </article>
+  <article>
+    <div class="fhead">
+      <span class="code">OWN-02</span>
+      <span class="ent">NBG-006</span>
+      <span class="sev high">high</span>
+    </div>
+    <p class="msg">Same code recorded under 2 different names: Northbridge Iberia SL / Northbridge Iberia, S.L.. If these are one entity the holding is double counted; if two, one has the wrong code.</p>
+    <table class="ev">
+      <thead><tr><th>Sheet</th><th>Row</th><th>Entity as written</th><th>Holding</th>
+        <th>From</th><th>To</th><th>Method</th><th>Version</th></tr></thead>
+      <tbody><tr>
+        <td>Group Structure</td><td class="n">13</td>
+        <td>Northbridge Iberia SL</td><td class="n">100%</td>
+        <td>2019-01-01</td><td>—</td>
+        <td>Full</td><td>v4.2</td></tr><tr>
+        <td>Group Structure</td><td class="n">14</td>
+        <td>Northbridge Iberia, S.L.</td><td class="n">100%</td>
+        <td>2019-01-01</td><td>—</td>
+        <td>Full</td><td>v4.2</td></tr>
+      </tbody></table>
+    <p class="rem">Confirm which name is the legal name and retire the other row.</p>
+  </article>
+  <article>
+    <div class="fhead">
+      <span class="code">OWN-06</span>
+      <span class="ent">NBG-011</span>
+      <span class="sev high">high</span>
+    </div>
+    <p class="msg">No effective-from date. A mid-period acquisition cannot consolidate from the acquisition date without one.</p>
+    <table class="ev">
+      <thead><tr><th>Sheet</th><th>Row</th><th>Entity as written</th><th>Holding</th>
+        <th>From</th><th>To</th><th>Method</th><th>Version</th></tr></thead>
+      <tbody><tr>
+        <td>Group Structure</td><td class="n">22</td>
+        <td>Northbridge Malaysia Sdn Bhd</td><td class="n">100%</td>
+        <td>—</td><td>—</td>
+        <td>Full</td><td>v4.2</td></tr>
+      </tbody></table>
+    <p class="rem">Ask legal for the acquisition or incorporation date.</p>
+  </article>
+  <article>
+    <div class="fhead">
+      <span class="code">OWN-08</span>
+      <span class="ent">NBG-010</span>
+      <span class="sev high">high</span>
+    </div>
+    <p class="msg">Parent NBG-099 (Northbridge Asia Holdings) does not appear in this register.</p>
+    <table class="ev">
+      <thead><tr><th>Sheet</th><th>Row</th><th>Entity as written</th><th>Holding</th>
+        <th>From</th><th>To</th><th>Method</th><th>Version</th></tr></thead>
+      <tbody><tr>
+        <td>Group Structure</td><td class="n">21</td>
+        <td>Northbridge Asia Pte Ltd</td><td class="n">100%</td>
+        <td>2019-11-01</td><td>—</td>
+        <td>Full</td><td>v4.2</td></tr>
+      </tbody></table>
+    <p class="rem">Obtain the parent entity, or correct the parent code.</p>
+  </article>
+  <article>
+    <div class="fhead">
+      <span class="code">OWN-10</span>
+      <span class="ent">NBG-005</span>
+      <span class="sev medium">medium</span>
+    </div>
+    <p class="msg">60% holding recorded with &quot;Equity&quot; method. That combination usually indicates either a shareholder agreement the register does not capture, or an error.</p>
+    <table class="ev">
+      <thead><tr><th>Sheet</th><th>Row</th><th>Entity as written</th><th>Holding</th>
+        <th>From</th><th>To</th><th>Method</th><th>Version</th></tr></thead>
+      <tbody><tr>
+        <td>Group Structure</td><td class="n">12</td>
+        <td>Northbridge Portugal Lda</td><td class="n">60%</td>
+        <td>2018-07-01</td><td>—</td>
+        <td>Equity</td><td>v4.2</td></tr>
+      </tbody></table>
+    <p class="rem">Ask accounting policy which is correct. Do not infer control from the percentage.</p>
+  </article>
+
+<div class="src">
+  <strong>What was read</strong>
+  <table><tbody>
+   <tr><td>Group Structure</td><td>header row 6, 26 rows</td></tr><tr><td>Consol Scope</td><td>not used — required column(s) not found: pct, parentCode</td></tr>
+  </tbody></table>
+  <p>11 of 21 entities appear in at least one finding. Every finding cites the
+  sheet and row it came from, so each can be checked against the source file. Nothing above is
+  inferred from outside the register: where the file does not settle a question, it is listed as
+  one rather than answered.</p>
+</div>
+</div></body></html>
