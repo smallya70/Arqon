@@ -1,5 +1,8 @@
 /* Import an ownership register from a workbook of unknown shape.
 
+   No external tools: a spreadsheet is a zip of XML and Node reads both natively
+   (see zip.js), so this runs unchanged on Windows, macOS and Linux.
+
    A client's register will not look like the one this was written against.
    So nothing is assumed: sheets are discovered, the header row is found by
    scoring candidate rows against known column meanings, and columns are
@@ -9,10 +12,7 @@
    is worse than a refusal — an unmapped ownership column means every finding
    downstream is wrong in a way nobody would notice. */
 
-import { execFileSync } from "node:child_process";
-import { readFileSync, mkdtempSync, readdirSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { readZip } from "./zip.js";
 
 /* Column meanings and the labels seen in the wild. Order matters only in that
    the first matching synonym wins for a given cell. */
@@ -44,24 +44,18 @@ const decode = (s) => s
 const EXCEL_EPOCH = Date.UTC(1899, 11, 30);
 const serialToDate = (n) => new Date(EXCEL_EPOCH + n * 86400000).toISOString().slice(0, 10);
 
-function unzip(xlsxPath) {
-  const dir = mkdtempSync(join(tmpdir(), "xlsx-"));
-  try { execFileSync("unzip", ["-o", "-q", xlsxPath, "-d", dir]); }
-  catch { throw new Error(`Could not open ${xlsxPath}. Is it a valid .xlsx file?`); }
-  return dir;
-}
-
-function sharedStrings(dir) {
-  let xml;
-  try { xml = readFileSync(join(dir, "xl/sharedStrings.xml"), "utf8"); } catch { return []; }
+function sharedStrings(zip) {
+  const xml = zip.text("xl/sharedStrings.xml");
+  if (!xml) return [];
   return [...xml.matchAll(/<si>([\s\S]*?)<\/si>/g)].map(m =>
     decode([...m[1].matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)].map(t => t[1]).join("")));
 }
 
 /* Sheet name → worksheet file, in workbook order. */
-function sheetIndex(dir) {
-  const wb = readFileSync(join(dir, "xl/workbook.xml"), "utf8");
-  const rels = readFileSync(join(dir, "xl/_rels/workbook.xml.rels"), "utf8");
+function sheetIndex(zip) {
+  const wb = zip.text("xl/workbook.xml");
+  const rels = zip.text("xl/_rels/workbook.xml.rels") || "";
+  if (!wb) throw new Error("No xl/workbook.xml — this does not look like a spreadsheet.");
   /* Attribute order varies between writers, so parse each tag's attributes
      rather than assuming a sequence. */
   const attrs = (tag) => Object.fromEntries(
@@ -77,14 +71,15 @@ function sheetIndex(dir) {
     const rid = a["r:id"] || a["id"];
     if (a.name && rid && target[rid]) out.push({ name: decode(a.name), file: target[rid] });
   }
-  if (!out.length) // some writers omit r:id ordering; fall back to files on disk
-    readdirSync(join(dir, "xl/worksheets")).filter(f => f.endsWith(".xml"))
-      .forEach((f, i) => out.push({ name: `Sheet${i + 1}`, file: f }));
+  if (!out.length) // some writers omit the relationship ids; fall back to entry order
+    zip.names().filter(n => /^xl\/worksheets\/[^/]+\.xml$/.test(n))
+      .forEach((n, i) => out.push({ name: `Sheet${i + 1}`, file: n.split("/").pop() }));
   return out;
 }
 
-function readSheet(dir, file, strings) {
-  const xml = readFileSync(join(dir, "xl/worksheets/" + file), "utf8");
+function readSheet(zip, file, strings) {
+  const xml = zip.text("xl/worksheets/" + file);
+  if (!xml) return [];
   const rows = [];
   for (const rm of xml.matchAll(/<row[^>]*r="(\d+)"[^>]*>([\s\S]*?)<\/row>/g)) {
     const cells = {};
@@ -143,15 +138,17 @@ function cellValue(raw, field) {
 }
 
 export function readRegister(xlsxPath, { version = "unknown", sheets } = {}) {
-  const dir = unzip(xlsxPath);
-  const strings = sharedStrings(dir);
-  const all = sheetIndex(dir);
+  let zip;
+  try { zip = readZip(xlsxPath); }
+  catch (e) { throw new Error(`Could not open ${xlsxPath}: ${e.message}`); }
+  const strings = sharedStrings(zip);
+  const all = sheetIndex(zip);
   const wanted = sheets ? all.filter(s => sheets.includes(s.name)) : all;
 
   const rows = [], report = { file: xlsxPath, version, sheets: [] };
 
   for (const sheet of wanted) {
-    const raw = readSheet(dir, sheet.file, strings);
+    const raw = readSheet(zip, sheet.file, strings);
     const hdr = findHeader(raw);
     const mapped = hdr ? Object.keys(hdr.map) : [];
     const missing = REQUIRED.filter(f => !mapped.includes(f));
