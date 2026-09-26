@@ -9,6 +9,7 @@ const strip = (f) => readFileSync(f, "utf8")
   .replace(/^export /gm, "");
 writeFileSync("arqon-programme.html",
   readFileSync("../cockpit/head.html", "utf8")
-  + strip("dataset.js") + "\n" + strip("derive.js") + "\n" + strip("ui.js")
+  + strip("dataset.js") + "\n" + strip("derive.js") + "\n" + strip("core.js")
+  + "\n" + strip("import-view.js") + "\n" + strip("ui.js")
   + "\n</script>\n</body>\n</html>\n");
 console.log("built arqon-programme.html");

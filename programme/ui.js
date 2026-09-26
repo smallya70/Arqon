@@ -180,6 +180,19 @@ function actionPanel(){
 let CURRENT = "lead";
 
 function render(lens){
+  /* The importer is a tool, not a lens: it shows no programme figures and
+     contributes none. Kept on the same page so the lead has one place to work. */
+  if(lens === "import"){
+    document.getElementById("client").textContent = `${PROGRAMME.client} · ${PROGRAMME.name}`;
+    document.getElementById("ref").textContent = `${PROGRAMME.ref} · tool`;
+    document.querySelectorAll(".lens button").forEach(b=>b.classList.toggle("on", b.dataset.lens==="import"));
+    document.getElementById("main").innerHTML = importView();
+    document.getElementById("foot").textContent =
+      "Structuring a transcript produces no records. Classification runs separately, and its output " +
+      "is reviewed by an analyst before it counts towards anything on the other views.";
+    bindImport();
+    return;
+  }
   document.getElementById("client").textContent = `${PROGRAMME.client} · ${PROGRAMME.name}`;
   document.getElementById("ref").textContent = `${PROGRAMME.ref} · ${PROGRAMME.phase} phase`;
   document.querySelectorAll(".lens button").forEach(b=>b.classList.toggle("on", b.dataset.lens===lens));
