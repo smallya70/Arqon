@@ -70,6 +70,23 @@
   .pill.gap{border-color:var(--bad);color:var(--bad)}
   .pill.partial{border-color:var(--mark);color:#92400e}
 
+  tbody tr.pick{cursor:pointer}
+  tbody tr.pick:hover{background:#f1f5f9}
+  .compose{border:1px solid var(--line);background:#fff;padding:18px 20px;margin-top:16px}
+  .compose label{display:block;font-size:12.5px;color:var(--mute);margin-bottom:6px}
+  .compose textarea{width:100%;min-height:84px;resize:vertical;padding:10px;font:inherit;
+    font-size:14px;border:1px solid var(--line)}
+  .compose textarea:focus{outline:0;border-color:var(--ink)}
+  .acts{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px}
+  .btn{display:inline-block;background:var(--ink);color:#fff;padding:9px 16px;font-size:13.5px;
+    text-decoration:none}
+  .btn:hover{background:#334155}
+  .btn.ghost{background:transparent;color:var(--body);border:1px solid var(--line)}
+  .btn.ghost:hover{background:#f8fafc}
+  .link{color:var(--mute);font-size:13.5px;text-decoration:underline;text-underline-offset:2px}
+  .inst{margin:14px 0 0;padding:12px 14px;background:#f8fafc;border:1px solid var(--hair);
+    font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;color:var(--body)}
+  .caveat{margin:12px 0 0;font-size:12.5px;color:var(--faint);max-width:78ch}
   footer{border-top:1px solid var(--line);margin-top:20px}
   footer div{max-width:1180px;margin:0 auto;padding:18px 28px;font-size:13px;color:var(--mute)}
 </style>
@@ -180,6 +197,37 @@ const ARCHETYPES = [
   ["Regulated entity, local GAAP",3,"gap","no workshop covers this yet"],
   ["Shared service centre",1,"covered","W-040"],
 ];
+
+/* Representative blocked records per owner, so an instruction can name them.
+   In the product these come from the register; here they are illustrative. */
+const BLOCKED_BY_OWNER = {
+ "Accounting policy lead": [
+  ["IC-014","Requirement","Restate hyperinflationary entities under IAS 29 before translating at closing rate.","priority, acceptance criteria"],
+  ["Q-008","Open question","How is a permanent departure from the group translation baseline classified?","answer outstanding"],
+  ["EX-003","Exception","Two Spanish entities submit intercompany manually until the 2027 close.","baseline rule, approver"],
+  ["IC-021","Requirement","Disclose IFRS 16 lease liabilities by maturity band in the statutory pack.","acceptance criteria, entity scope"],
+ ],
+ "Group consolidation lead": [
+  ["IC-002","Requirement","Reject intercompany submissions with no valid counterparty at the point of entry.","priority, acceptance criteria"],
+  ["Q-003","Open question","What tolerance applies, and does it differ by balance type?","answer outstanding"],
+  ["A-011","Action","Confirm the close calendar milestones with regional controllers.","due date"],
+ ],
+ "Programme data architect": [
+  ["IC-007","Requirement","Hold entity ownership with effective dates so mid-period acquisitions consolidate from the acquisition date.","entity scope"],
+  ["Q-005","Open question","Can legal supply ownership data carrying effective dates?","answer outstanding"],
+ ],
+ "Regional finance lead, APAC": [
+  ["IC-018","Requirement","Support local GAAP reporting alongside group IFRS for regulated entities.","priority, entity scope"],
+  ["IS-004","Issue","Three APAC entities applied period-end rate to revenue contrary to group policy.","impact"],
+ ],
+ "Regional finance lead, EMEA": [
+  ["IC-005","Requirement","Capture counterparty on intercompany balances at account level.","acceptance criteria"],
+ ],
+ "Finance control and audit": [
+  ["IC-030","Requirement","Detect conflicting duties across submission and approval through a periodic report.","acceptance criteria, owner"],
+ ],
+ "Unassigned": [],
+};
 
 const ANALYST_QUEUE = [
   ["M. Torres",9,"W-046 extraction reviewed to passage 180 of 240"],
@@ -303,8 +351,9 @@ function owners(lens){
     : "The number that runs a programme. Age is the oldest outstanding item for that role."}</p>
   <table><thead><tr><th>Role</th>${lens!=="sponsor"?"<th>Side</th>":""}
     <th class="num">Blocked</th><th class="num">Oldest</th><th>Subjects</th></tr></thead>
-  <tbody>${rows.map(o=>`<tr>
-    <td>${esc(o.role)}</td>
+  <tbody>${rows.map(o=>`<tr data-role="${esc(o.role)}" class="${
+      (BLOCKED_BY_OWNER[o.role]||[]).length?"pick":""}">
+    <td>${esc(o.role)}${(BLOCKED_BY_OWNER[o.role]||[]).length?'<span class="sub">select to prepare an instruction</span>':""}</td>
     ${lens!=="sponsor"?`<td style="font-size:13px;color:var(--mute)">${o.side}</td>`:""}
     <td class="num ${o.count>15?"bad":""}">${o.count}</td>
     <td class="num ${o.oldestDays>30?"bad":""}">${o.oldestDays}d</td>
@@ -351,6 +400,80 @@ const queue = () => `<section><h2>Analyst review queue</h2>
     <td style="font-size:13px;color:var(--body)">${esc(note)}</td></tr>`).join("")}
   </tbody></table></section>`;
 
+/* ------- prepare an instruction for one owner -------
+   A static page cannot send anything. What it can do is prepare the two things
+   that do work: a prefilled Outlook draft, and the instruction the analyst
+   pastes into ARQON to have the register draft it properly. */
+
+let ACTION = { role: null, note: "" };
+const EMAIL_OF = {
+  "Accounting policy lead": "policy.lead@northbridge.example",
+  "Group consolidation lead": "consolidation.lead@northbridge.example",
+  "Programme data architect": "data.architect@diintl.com",
+  "Regional finance lead, APAC": "apac.finance@northbridge.example",
+  "Regional finance lead, EMEA": "emea.finance@northbridge.example",
+  "Finance control and audit": "control@northbridge.example",
+};
+
+function mailBody(role, recs, note){
+  const lines = [
+    `${role},`, "",
+    note.trim() ? note.trim() : "The records below are outstanding with you.",
+    "",
+    ...recs.flatMap(([id,kind,text,blockers]) => [
+      `${id}  (${kind})`,
+      `   ${text}`,
+      `   outstanding: ${blockers}`,
+      ""]),
+    `From the ${PROGRAMME.client} ${PROGRAMME.name} register (${PROGRAMME.ref}).`,
+  ];
+  return lines.join("\n");
+}
+
+function actionPanel(){
+  const role = ACTION.role;
+  if(!role) return "";
+  const recs = BLOCKED_BY_OWNER[role] || [];
+  const owner = BY_OWNER.find(o=>o.role===role);
+  const to = EMAIL_OF[role] || "";
+  const subject = `${PROGRAMME.client}: ${recs.length} record${recs.length===1?"":"s"} outstanding with you`;
+  const href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}`
+             + `&body=${encodeURIComponent(mailBody(role, recs, ACTION.note))}`;
+  const instruction =
+    `Draft a notification to the ${role} on ${PROGRAMME.ref} for records `
+    + recs.map(r=>r[0]).join(", ")
+    + (ACTION.note.trim() ? `.\nContext to include: ${ACTION.note.trim()}` : ".");
+
+  return `<section id="action">
+    <h2>Prepare an instruction — ${esc(role)}</h2>
+    <p class="lead">${owner ? `${owner.count} blocked, oldest ${owner.oldestDays} days.` : ""}
+    Nothing is sent from this page. It prepares the two things that work: a draft in your own
+    Outlook, or an instruction for ARQON to draft it from the register with evidence attached.</p>
+
+    ${recs.length ? `<table><thead><tr><th>Record</th><th>Kind</th><th>Statement</th>
+      <th>Outstanding</th></tr></thead><tbody>
+      ${recs.map(([id,kind,text,bl])=>`<tr><td class="mono" style="font-size:12.5px">${id}</td>
+        <td style="font-size:13px;color:var(--mute)">${kind}</td><td>${esc(text)}</td>
+        <td style="font-size:13px" class="warnx">${esc(bl)}</td></tr>`).join("")}
+      </tbody></table>`
+     : `<p class="lead">No records are listed against this role.</p>`}
+
+    <div class="compose">
+      <label for="note">Your instruction to them — optional, included in both outputs</label>
+      <textarea id="note" placeholder="e.g. We need these before the design review on the 14th. The tolerance question is blocking the intercompany build.">${esc(ACTION.note)}</textarea>
+      <div class="acts">
+        <a class="btn" href="${href}">Open a draft in Outlook</a>
+        <button class="btn ghost" data-copy="1">Copy instruction for ARQON</button>
+        <button class="link" data-close="1">Close</button>
+      </div>
+      <pre class="inst" id="inst">${esc(instruction)}</pre>
+      <p class="caveat">The Outlook draft is plain text and carries no evidence links. The ARQON
+      instruction produces a draft that cites the workshop passage behind every record, and records
+      the notification in the outbox. Both leave the sending to you.</p>
+    </div>
+  </section>`;
+}
+
 function render(lens){
   document.getElementById("client").textContent = `${PROGRAMME.client} · ${PROGRAMME.name}`;
   document.getElementById("ref").textContent = `${PROGRAMME.ref} · ${PROGRAMME.phase} phase`;
@@ -358,18 +481,60 @@ function render(lens){
     b.classList.toggle("on", b.dataset.lens===lens));
   const parts = [`<p class="lensnote">${LENS[lens].note}</p>`, headline(lens)];
   if(lens==="steering") parts.push(decisions(), risks(), kinds(), workshops(lens));
-  if(lens==="sponsor")  parts.push(decisions(), owners(lens), workshops(lens));
-  if(lens==="lead")     parts.push(queue(), owners(lens), kinds(), archetypes(),
+  if(lens==="sponsor")  parts.push(decisions(), owners(lens), actionPanel(), workshops(lens));
+  if(lens==="lead")     parts.push(queue(), owners(lens), actionPanel(), kinds(), archetypes(),
                                    workshops(lens), decisions(), risks());
   document.getElementById("main").innerHTML = parts.join("");
   document.getElementById("foot").textContent = LENS[lens].foot;
 }
 
+let CURRENT = "lead";
+
 document.addEventListener("click", e=>{
-  const b = e.target.closest("[data-lens]");
-  if(b) render(b.dataset.lens);
+  const lensBtn = e.target.closest("[data-lens]");
+  if(lensBtn){ CURRENT = lensBtn.dataset.lens; ACTION = {role:null,note:""}; render(CURRENT); return; }
+
+  if(e.target.closest("[data-close]")){ ACTION = {role:null,note:""}; render(CURRENT); return; }
+
+  if(e.target.closest("[data-copy]")){
+    const text = document.getElementById("inst").textContent;
+    navigator.clipboard?.writeText(text).then(
+      ()=>{ e.target.textContent = "Copied"; setTimeout(()=>{ e.target.textContent =
+             "Copy instruction for ARQON"; }, 1600); },
+      ()=>{ const r = document.createRange(); r.selectNodeContents(document.getElementById("inst"));
+            getSelection().removeAllRanges(); getSelection().addRange(r); });
+    return;
+  }
+
+  const row = e.target.closest("tr[data-role]");
+  if(row && row.classList.contains("pick")){
+    ACTION = { role: row.dataset.role, note: ACTION.note };
+    render(CURRENT);
+    document.getElementById("action")?.scrollIntoView({behavior:"smooth",block:"start"});
+  }
 });
-render("lead");
+
+/* Keep the note as it is typed, and refresh the prepared outputs without
+   re-rendering the field out from under the cursor. */
+document.addEventListener("input", e=>{
+  if(e.target.id !== "note") return;
+  ACTION.note = e.target.value;
+  const recs = BLOCKED_BY_OWNER[ACTION.role] || [];
+  const inst = document.getElementById("inst");
+  if(inst) inst.textContent =
+    `Draft a notification to the ${ACTION.role} on ${PROGRAMME.ref} for records `
+    + recs.map(r=>r[0]).join(", ")
+    + (ACTION.note.trim() ? `.\nContext to include: ${ACTION.note.trim()}` : ".");
+  const link = document.querySelector("#action a.btn");
+  if(link){
+    const to = EMAIL_OF[ACTION.role] || "";
+    const subject = `${PROGRAMME.client}: ${recs.length} record${recs.length===1?"":"s"} outstanding with you`;
+    link.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}`
+              + `&body=${encodeURIComponent(mailBody(ACTION.role, recs, ACTION.note))}`;
+  }
+});
+
+render(CURRENT);
 </script>
 </body>
 </html>
