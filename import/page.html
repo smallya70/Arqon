@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ARQON — transcript import</title>
+<style>
+ :root{--ink:#0f172a;--body:#334155;--mute:#64748b;--faint:#94a3b8;--line:#cbd5e1;
+   --hair:#e2e8f0;--page:#fafaf9;--mark:#f59e0b;--mark-bg:#fffbeb;--bad:#9f1239;--ok:#15803d}
+ *{box-sizing:border-box}
+ body{margin:0;background:var(--page);color:var(--ink);
+   font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+ .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+ button{font:inherit;cursor:pointer;border:0}
+ .btn{background:var(--ink);color:#fff;padding:9px 16px;font-size:14px}
+ .btn:hover{background:#334155}.btn:disabled{background:var(--faint);cursor:default}
+ .btn.ghost{background:transparent;color:var(--body);border:1px solid var(--line)}
+ .btn.ghost:hover{background:#fff}
+ .link{background:none;color:var(--mute);font-size:13.5px;text-decoration:underline;
+   text-underline-offset:2px;padding:0}
+ header{background:#fff;border-bottom:1px solid var(--line)}
+ .bar{max-width:1080px;margin:0 auto;padding:14px 28px;display:flex;flex-wrap:wrap;
+   align-items:baseline;gap:6px 18px}
+ .brand{font-weight:600;letter-spacing:.03em}
+ .what{font-size:14px;color:var(--body)}
+ main{max-width:1080px;margin:0 auto;padding:28px}
+ h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--mute);font-weight:600;
+   margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+ p.lead{color:var(--body);margin:0 0 16px;max-width:76ch}
+ section{margin:0 0 36px}
+ .note{border-left:2px solid var(--mark);background:var(--mark-bg);padding:12px 16px;
+   font-size:13.5px;color:#78350f;margin:0 0 24px}
+ .inputs{display:grid;gap:18px}
+ @media(min-width:800px){.inputs{grid-template-columns:1fr 1fr}}
+ .box{border:1px solid var(--line);background:#fff;padding:18px 20px}
+ .box h3{margin:0 0 4px;font-size:15px}
+ .box p{margin:0 0 12px;font-size:13px;color:var(--mute)}
+ input[type=file]{font:inherit;font-size:13px;max-width:100%}
+ textarea{width:100%;min-height:120px;resize:vertical;padding:10px;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;
+   border:1px solid var(--line)}
+ textarea:focus{outline:0;border-color:var(--ink)}
+ .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+ .figures{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);
+   border:1px solid var(--line)}
+ @media(min-width:700px){.figures{grid-template-columns:repeat(4,1fr)}}
+ .fig{background:#fff;padding:14px 16px}
+ .fig .n{font-size:26px;letter-spacing:-.02em}.fig.warn .n{color:var(--bad)}
+ .fig .l{font-size:12px;color:var(--mute);margin-top:3px}
+ .scroll{overflow-x:auto}.scroll table{min-width:640px}
+ table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);font-size:13.5px}
+ th{text-align:left;font-size:11.5px;color:var(--mute);font-weight:500;padding:8px 12px;
+   border-bottom:1px solid var(--line);white-space:nowrap}
+ td{padding:8px 12px;border-bottom:1px solid var(--hair);vertical-align:top}
+ tr:last-child td{border-bottom:0}
+ .tag{font-size:11px;padding:2px 8px;color:#fff;white-space:nowrap}
+ .tag.confirmed{background:#15803d}.tag.reported{background:#b45309}
+ .tag.conflict{background:#9f1239}.tag.uncertain{background:#7c3aed}
+ .tag.unresolved{background:#475569}.tag.unparsed{background:#475569}
+ .side{display:grid;gap:16px}
+ @media(min-width:900px){.side{grid-template-columns:1fr 1fr}}
+ pre.out{margin:0;padding:14px;background:#fff;border:1px solid var(--line);max-height:420px;
+   overflow:auto;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:var(--body)}
+ .psg{border-bottom:1px solid var(--hair);padding:9px 12px}
+ .psg:last-child{border-bottom:0}
+ .psg .m{display:flex;gap:8px;align-items:baseline;font-size:11.5px;flex-wrap:wrap}
+ .psg .pid{color:var(--faint)}
+ .psg p{margin:3px 0 0;font-size:13.5px;color:var(--body)}
+ .panel{border:1px solid var(--line);background:#fff;max-height:420px;overflow:auto}
+ .err{border-left:2px solid var(--bad);background:#fff1f2;color:#881337;padding:10px 14px;
+   font-size:13px;margin:12px 0 0}
+ .hide{display:none}
+ footer{border-top:1px solid var(--line);margin-top:24px}
+ footer div{max-width:1080px;margin:0 auto;padding:18px 28px;font-size:13px;color:var(--mute)}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <span class="brand">ARQON</span>
+  <span class="what">Transcript import — structure a session for extraction</span>
+</div></header>
+<main>
+  <div class="note">
+    This tool structures a transcript. <strong>It classifies nothing and creates no records.</strong>
+    Everything happens in this browser — no upload, no network request, no credentials. The JSON it
+    exports is the input to classification, which runs separately and under review.
+  </div>
+
+  <section>
+    <h2>1 · Load</h2>
+    <div class="inputs">
+      <div class="box">
+        <h3>Transcript</h3>
+        <p>A UTF-8 <span class="mono">.txt</span> file, one turn per line, in the form
+           <span class="mono">[hh:mm] Speaker: what they said</span>. The timestamp is optional.</p>
+        <input type="file" id="tfile" accept=".txt,text/plain">
+        <div class="row">
+          <button class="link" id="sample">load a sample transcript</button>
+        </div>
+      </div>
+      <div class="box">
+        <h3>Speaker roster</h3>
+        <p>One per line: <span class="mono">name, designation</span>. Quote a designation containing
+           a comma. Names absent from the roster are flagged, never guessed.</p>
+        <textarea id="roster" placeholder='name, designation&#10;Maria Torres, Facilitator&#10;Hui Lim, "Regional finance lead, APAC"'></textarea>
+        <div class="row">
+          <input type="file" id="rfile" accept=".csv,.txt,text/csv,text/plain">
+          <button class="link" id="rsample">use the sample roster</button>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <label class="mono" style="font-size:13px">Workshop ref
+        <input id="wref" placeholder="W-049" style="font:inherit;padding:6px 8px;border:1px solid var(--line);width:110px">
+      </label>
+      <button class="btn" id="go" disabled>Structure the transcript</button>
+      <span id="status" style="font-size:13px;color:var(--mute)"></span>
+    </div>
+    <div id="rerr"></div>
+  </section>
+
+  <div id="result" class="hide"></div>
+</main>
+<footer><div id="foot">Nothing here is classified. Records are produced by extraction, reviewed by an
+analyst, and only then counted anywhere.</div></footer>
+<script>

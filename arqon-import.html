@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ARQON — transcript import</title>
+<style>
+ :root{--ink:#0f172a;--body:#334155;--mute:#64748b;--faint:#94a3b8;--line:#cbd5e1;
+   --hair:#e2e8f0;--page:#fafaf9;--mark:#f59e0b;--mark-bg:#fffbeb;--bad:#9f1239;--ok:#15803d}
+ *{box-sizing:border-box}
+ body{margin:0;background:var(--page);color:var(--ink);
+   font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+ .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+ button{font:inherit;cursor:pointer;border:0}
+ .btn{background:var(--ink);color:#fff;padding:9px 16px;font-size:14px}
+ .btn:hover{background:#334155}.btn:disabled{background:var(--faint);cursor:default}
+ .btn.ghost{background:transparent;color:var(--body);border:1px solid var(--line)}
+ .btn.ghost:hover{background:#fff}
+ .link{background:none;color:var(--mute);font-size:13.5px;text-decoration:underline;
+   text-underline-offset:2px;padding:0}
+ header{background:#fff;border-bottom:1px solid var(--line)}
+ .bar{max-width:1080px;margin:0 auto;padding:14px 28px;display:flex;flex-wrap:wrap;
+   align-items:baseline;gap:6px 18px}
+ .brand{font-weight:600;letter-spacing:.03em}
+ .what{font-size:14px;color:var(--body)}
+ main{max-width:1080px;margin:0 auto;padding:28px}
+ h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--mute);font-weight:600;
+   margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+ p.lead{color:var(--body);margin:0 0 16px;max-width:76ch}
+ section{margin:0 0 36px}
+ .note{border-left:2px solid var(--mark);background:var(--mark-bg);padding:12px 16px;
+   font-size:13.5px;color:#78350f;margin:0 0 24px}
+ .inputs{display:grid;gap:18px}
+ @media(min-width:800px){.inputs{grid-template-columns:1fr 1fr}}
+ .box{border:1px solid var(--line);background:#fff;padding:18px 20px}
+ .box h3{margin:0 0 4px;font-size:15px}
+ .box p{margin:0 0 12px;font-size:13px;color:var(--mute)}
+ input[type=file]{font:inherit;font-size:13px;max-width:100%}
+ textarea{width:100%;min-height:120px;resize:vertical;padding:10px;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;
+   border:1px solid var(--line)}
+ textarea:focus{outline:0;border-color:var(--ink)}
+ .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+ .figures{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);
+   border:1px solid var(--line)}
+ @media(min-width:700px){.figures{grid-template-columns:repeat(4,1fr)}}
+ .fig{background:#fff;padding:14px 16px}
+ .fig .n{font-size:26px;letter-spacing:-.02em}.fig.warn .n{color:var(--bad)}
+ .fig .l{font-size:12px;color:var(--mute);margin-top:3px}
+ .scroll{overflow-x:auto}.scroll table{min-width:640px}
+ table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);font-size:13.5px}
+ th{text-align:left;font-size:11.5px;color:var(--mute);font-weight:500;padding:8px 12px;
+   border-bottom:1px solid var(--line);white-space:nowrap}
+ td{padding:8px 12px;border-bottom:1px solid var(--hair);vertical-align:top}
+ tr:last-child td{border-bottom:0}
+ .tag{font-size:11px;padding:2px 8px;color:#fff;white-space:nowrap}
+ .tag.confirmed{background:#15803d}.tag.reported{background:#b45309}
+ .tag.conflict{background:#9f1239}.tag.uncertain{background:#7c3aed}
+ .tag.unresolved{background:#475569}.tag.unparsed{background:#475569}
+ .side{display:grid;gap:16px}
+ @media(min-width:900px){.side{grid-template-columns:1fr 1fr}}
+ pre.out{margin:0;padding:14px;background:#fff;border:1px solid var(--line);max-height:420px;
+   overflow:auto;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:var(--body)}
+ .psg{border-bottom:1px solid var(--hair);padding:9px 12px}
+ .psg:last-child{border-bottom:0}
+ .psg .m{display:flex;gap:8px;align-items:baseline;font-size:11.5px;flex-wrap:wrap}
+ .psg .pid{color:var(--faint)}
+ .psg p{margin:3px 0 0;font-size:13.5px;color:var(--body)}
+ .panel{border:1px solid var(--line);background:#fff;max-height:420px;overflow:auto}
+ .err{border-left:2px solid var(--bad);background:#fff1f2;color:#881337;padding:10px 14px;
+   font-size:13px;margin:12px 0 0}
+ .hide{display:none}
+ footer{border-top:1px solid var(--line);margin-top:24px}
+ footer div{max-width:1080px;margin:0 auto;padding:18px 28px;font-size:13px;color:var(--mute)}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <span class="brand">ARQON</span>
+  <span class="what">Transcript import — structure a session for extraction</span>
+</div></header>
+<main>
+  <div class="note">
+    This tool structures a transcript. <strong>It classifies nothing and creates no records.</strong>
+    Everything happens in this browser — no upload, no network request, no credentials. The JSON it
+    exports is the input to classification, which runs separately and under review.
+  </div>
+
+  <section>
+    <h2>1 · Load</h2>
+    <div class="inputs">
+      <div class="box">
+        <h3>Transcript</h3>
+        <p>A UTF-8 <span class="mono">.txt</span> file, one turn per line, in the form
+           <span class="mono">[hh:mm] Speaker: what they said</span>. The timestamp is optional.</p>
+        <input type="file" id="tfile" accept=".txt,text/plain">
+        <div class="row">
+          <button class="link" id="sample">load a sample transcript</button>
+        </div>
+      </div>
+      <div class="box">
+        <h3>Speaker roster</h3>
+        <p>One per line: <span class="mono">name, designation</span>. Quote a designation containing
+           a comma. Names absent from the roster are flagged, never guessed.</p>
+        <textarea id="roster" placeholder='name, designation&#10;Maria Torres, Facilitator&#10;Hui Lim, "Regional finance lead, APAC"'></textarea>
+        <div class="row">
+          <input type="file" id="rfile" accept=".csv,.txt,text/csv,text/plain">
+          <button class="link" id="rsample">use the sample roster</button>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <label class="mono" style="font-size:13px">Workshop ref
+        <input id="wref" placeholder="W-049" style="font:inherit;padding:6px 8px;border:1px solid var(--line);width:110px">
+      </label>
+      <button class="btn" id="go" disabled>Structure the transcript</button>
+      <span id="status" style="font-size:13px;color:var(--mute)"></span>
+    </div>
+    <div id="rerr"></div>
+  </section>
+
+  <div id="result" class="hide"></div>
+</main>
+<footer><div id="foot">Nothing here is classified. Records are produced by extraction, reviewed by an
+analyst, and only then counted anywhere.</div></footer>
+<script>
+/* Transcript structuring. No model, no network, no credentials.
+
+   Produces passages with repeatable IDs and speakers resolved against a roster
+   the user supplies. Resolves nothing it was not told: a name absent from the
+   roster stays unresolved, and an explicit uncertainty marker never acquires a
+   designation, because a designation decides whether a statement can be a
+   decision at all. */
+
+const SCHEMA = "arqon.transcript/1";
+
+/* A content fingerprint, not a cryptographic hash. Deterministic, so the same
+   file always yields the same passage IDs and drift is detectable. */
+function fingerprint(text){
+  let h1 = 0x811c9dc5, h2 = 0x01000193;
+  for (let i = 0; i < text.length; i++){
+    const c = text.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 0x01000193) >>> 0;
+    h2 = Math.imul(h2 + c, 0x85ebca6b) >>> 0;
+  }
+  return (h1.toString(16).padStart(8,"0") + h2.toString(16).padStart(8,"0")).slice(0,12);
+}
+
+const TURN = /^(?:\[?(\d{1,2}:\d{2}(?::\d{2})?)\]?)?\s*([^:]{1,64}):\s*(.+)$/;
+const PAREN = /^(.+?)\s*\(([^)]+)\)\s*$/;
+const UNCERTAIN = /\buncertain\b|\bunsure\b|unidentified|unknown speaker|inaudible|speaker\s*\d|\?\s*$/i;
+const DOUBT = /probably|i think it was|sorry,? who|who was that/i;
+
+/* Designations routinely contain commas — "Regional finance lead, EMEA" — so a
+   naive split truncates exactly the fields that matter. */
+function splitCsv(line){
+  const out = [];
+  let cur = "", inQuotes = false;
+  for (let i = 0; i < line.length; i++){
+    const c = line[i];
+    if (c === '"'){
+      if (inQuotes && line[i + 1] === '"'){ cur += '"'; i++; }
+      else inQuotes = !inQuotes;
+    } else if (c === "," && !inQuotes){ out.push(cur.trim()); cur = ""; }
+    else cur += c;
+  }
+  out.push(cur.trim());
+  return out;
+}
+
+/* roster: [{name, designation}] */
+function parseRoster(text){
+  const rows = [], errors = [];
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const seen = new Map();
+  for (const [i, line] of lines.entries()){
+    if (i === 0 && /^name\s*,/i.test(line)) continue;           // header
+    const parts = splitCsv(line);
+    if (parts.length < 2 || !parts[0] || !parts[1]){
+      errors.push(`Line ${i + 1}: expected "name, designation" — got "${line.slice(0, 48)}"`);
+      continue;
+    }
+    const [name, designation] = parts;
+    const k = name.toLowerCase();
+    if (seen.has(k) && seen.get(k).toLowerCase() !== designation.toLowerCase()){
+      errors.push(`"${name}" is listed twice with different designations: ` +
+                  `"${seen.get(k)}" and "${designation}". Resolve before importing.`);
+      continue;
+    }
+    seen.set(k, designation);
+    rows.push({ name, designation });
+  }
+  return { roster: rows, errors };
+}
+
+function resolve(label, roster){
+  const s = label.trim();
+  const base = { raw: s, designation: "", rosterDesignation: "", inlineDesignation: "" };
+  if (UNCERTAIN.test(s)){
+    const m = PAREN.exec(s);
+    if (m) base.inlineDesignation = m[1].trim();
+    return { ...base, certainty: "uncertain", why: "explicit uncertainty marker — no designation assigned" };
+  }
+  const byName = new Map(roster.map(r => [r.name.toLowerCase(), r.designation]));
+  const designations = new Set(roster.map(r => r.designation.toLowerCase()));
+
+  const m = PAREN.exec(s);
+  if (m){
+    const role = m[1].trim(), name = m[2].trim();
+    base.inlineDesignation = role;
+    const rd = byName.get(name.toLowerCase());
+    if (rd === undefined)
+      return { ...base, designation: role, certainty: "reported",
+               why: `designation given in the transcript; "${name}" is not on the roster` };
+    base.rosterDesignation = rd;
+    if (rd.toLowerCase() !== role.toLowerCase())
+      return { ...base, certainty: "conflict",
+               why: `transcript says "${role}", roster says "${rd}" — neither is used` };
+    return { ...base, designation: role, certainty: "confirmed", why: "confirmed against the roster" };
+  }
+  const rd = byName.get(s.toLowerCase());
+  if (rd !== undefined)
+    return { ...base, designation: rd, rosterDesignation: rd, certainty: "confirmed", why: "matched on the roster" };
+  if (designations.has(s.toLowerCase()))
+    return { ...base, designation: s, inlineDesignation: s, certainty: "reported",
+             why: "a designation was given directly; there is no name to confirm it against" };
+  const near = nearMatches(s, roster);
+  return { ...base, certainty: "unresolved", suggestions: near,
+           why: near.length
+             ? `not on the roster. Similar entries: ${near.map(n => `"${n.name}" (${n.designation})`).join("; ")}`
+               + ". Confirm or add to the roster — this is a suggestion, not a match."
+             : "not on the roster and no designation given" };
+}
+
+/* A transcript says "D. Ahmed"; the roster says "Dele Ahmed". Suggest, never
+   resolve: a wrong designation decides whether a statement can be a decision,
+   and two sources that merely look alike are not confirmation. */
+function nearMatches(label, roster){
+  const tokens = (s) => s.toLowerCase().replace(/[.,]/g, " ").split(/\s+/).filter(Boolean);
+  const a = tokens(label);
+  if (!a.length) return [];
+  const surname = a[a.length - 1];
+  return roster.filter(r => {
+    const b = tokens(r.name);
+    if (!b.length) return false;
+    if (b[b.length - 1] !== surname) return false;      // same surname
+    if (a.length === 1 || b.length === 1) return true;
+    return a[0][0] === b[0][0];                          // and same first initial
+  }).slice(0, 3);
+}
+
+function structure(text, { roster = [], filename = "transcript.txt", workshop = "" } = {}){
+  const fp = fingerprint(text);
+  const lines = text.split(/\r?\n/);
+  const passages = [];
+  let n = 0;
+
+  for (const [i, raw] of lines.entries()){
+    const line = raw.trim();
+    if (!line) continue;
+    n++;
+    const id = `P-${String(n).padStart(3, "0")}`;
+    const m = TURN.exec(line);
+    if (!m){
+      passages.push({ id, sourceLine: i + 1, time: "", speaker: null, text: line,
+                      parse: "unparsed", why: "did not match [time] Speaker: text" });
+      continue;
+    }
+    const sp = resolve(m[2], roster);
+    passages.push({ id, sourceLine: i + 1, time: m[1] || "", speaker: sp,
+                    text: m[3].trim(), parse: "ok" });
+  }
+
+  /* A later turn casting doubt marks the nearby speaker uncertain. Never resolves it. */
+  passages.forEach((p, i) => {
+    if (p.parse === "ok" && DOUBT.test(p.text))
+      passages.slice(Math.max(0, i - 3), i).forEach(q => {
+        if (q.speaker?.certainty === "uncertain") q.speaker.why += `; doubt raised at ${p.id}`;
+      });
+  });
+
+  const speakers = new Map();
+  for (const p of passages){
+    if (!p.speaker) continue;
+    const k = p.speaker.raw;
+    if (!speakers.has(k)) speakers.set(k, { ...p.speaker, passages: [] });
+    speakers.get(k).passages.push(p.id);
+  }
+
+  const issues = [];
+  for (const s of speakers.values())
+    if (s.certainty !== "confirmed")
+      issues.push({ type: "speaker", certainty: s.certainty, speaker: s.raw,
+                    detail: s.why, suggestions: s.suggestions || [], passages: s.passages });
+  for (const p of passages)
+    if (p.parse === "unparsed")
+      issues.push({ type: "line", passage: p.id, detail: p.why,
+                    text: p.text.slice(0, 60) });
+
+  return {
+    schema: SCHEMA,
+    source: { filename, fingerprint: fp, bytes: text.length, lines: lines.length,
+              importedAt: new Date().toISOString(), workshop: workshop || null },
+    roster,
+    passages,
+    speakers: [...speakers.values()],
+    issues,
+    state: issues.length ? "prepared with unresolved items" : "prepared",
+  };
+}
+
+const SAMPLE_TRANSCRIPT = `[09:04] Maria Torres: Right, currency translation and ownership. What rate do the entities use today?
+[09:05] Hui Lim: Closing rate for balance sheet, average for P&L. That's been the policy as long as I've been here.
+[09:06] Dele Ahmed: It's in the policy document. Though three entities have been using period-end for revenue, and nobody picked it up until last year's audit.
+[09:07] Maria Torres: Which three?
+[09:07] Dele Ahmed: Singapore, Malaysia, and I think Vietnam. I'd have to check Vietnam.
+[09:09] Unidentified speaker: We fixed Vietnam in March.
+[09:10] Hui Lim: That was probably Wei on the line. Vietnam was corrected, I believe.
+[09:12] Sade Okonjo: Going forward the system must apply closing rate to balance sheet accounts and average rate to income statement accounts, with no local override.
+[09:13] Dele Ahmed: Agreed. And we need an exception route for the hyperinflationary entities, because IAS 29 doesn't work that way.
+[09:14] Sade Okonjo: Turkey and Argentina. Those restate first and then translate at closing.
+[09:18] Group controller (D. Ahmed): The ownership register comes from legal as a quarterly extract.
+[09:22] J. Novak: We looked at that last year and parked it.
+[09:25] Accounting policy lead (uncertain): Monthly won't help if the effective date isn't carried.`;
+
+const SAMPLE_ROSTER = `name, designation
+Maria Torres, Facilitator
+Hui Lim, "Regional finance lead, APAC"
+Dele Ahmed, Group controller
+Sade Okonjo, Accounting policy lead`;
+
+let transcriptText = "", structured = null;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function ready(){
+  $("go").disabled = !transcriptText.trim();
+  $("status").textContent = transcriptText.trim()
+    ? `${transcriptText.split(/\r?\n/).filter(l => l.trim()).length} non-empty lines loaded`
+    : "";
+}
+
+function readFile(file, then){
+  const fr = new FileReader();
+  fr.onload = () => then(fr.result, file.name);
+  fr.onerror = () => { $("status").textContent = "Could not read that file."; };
+  fr.readAsText(file, "utf-8");
+}
+
+$("tfile").addEventListener("change", e => {
+  const f = e.target.files[0];
+  if (f) readFile(f, (text, name) => { transcriptText = text; $("tfile").dataset.name = name; ready(); });
+});
+$("rfile").addEventListener("change", e => {
+  const f = e.target.files[0];
+  if (f) readFile(f, (text) => { $("roster").value = text; });
+});
+$("sample").addEventListener("click", () => {
+  transcriptText = SAMPLE_TRANSCRIPT; $("tfile").dataset.name = "sample-session.txt";
+  $("wref").value = $("wref").value || "W-049"; ready();
+  $("status").textContent += " — sample";
+});
+$("rsample").addEventListener("click", () => { $("roster").value = SAMPLE_ROSTER; });
+
+$("go").addEventListener("click", () => {
+  const { roster, errors } = parseRoster($("roster").value || "");
+  $("rerr").innerHTML = errors.length
+    ? `<div class="err"><strong>Roster not used as given.</strong><br>${errors.map(esc).join("<br>")}</div>`
+    : "";
+  /* A roster that contradicts itself is worse than none: it would resolve a
+     speaker cleanly and wrongly. */
+  if (errors.some(e => /listed twice/.test(e))) return;
+
+  structured = structure(transcriptText, {
+    roster,
+    filename: $("tfile").dataset.name || "pasted.txt",
+    workshop: $("wref").value.trim(),
+  });
+  renderResult();
+  $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+function renderResult(){
+  const s = structured;
+  const counts = {};
+  s.passages.forEach(p => {
+    const k = p.parse === "unparsed" ? "unparsed" : p.speaker.certainty;
+    counts[k] = (counts[k] || 0) + 1;
+  });
+  const confirmed = counts.confirmed || 0;
+
+  $("result").className = "";
+  $("result").innerHTML = `
+  <section>
+    <h2>2 · Structure</h2>
+    <p class="lead">Transcript prepared for extraction. ${s.passages.length} passages, fingerprint
+      <span class="mono">${esc(s.source.fingerprint)}</span>. The same file always produces the same
+      passage IDs, so a record can cite one and still resolve later.</p>
+    <div class="figures">
+      <div class="fig"><div class="n">${s.passages.length}</div><div class="l">passages</div></div>
+      <div class="fig"><div class="n">${confirmed}</div><div class="l">speakers confirmed</div></div>
+      <div class="fig${s.passages.length - confirmed ? " warn" : ""}">
+        <div class="n">${s.passages.length - confirmed}</div><div class="l">passages without a confirmed speaker</div></div>
+      <div class="fig${s.issues.length ? " warn" : ""}"><div class="n">${s.issues.length}</div>
+        <div class="l">items for review</div></div>
+    </div>
+  </section>
+
+  ${s.issues.length ? `<section>
+    <h2>3 · Items for review</h2>
+    <p class="lead">Nothing here is guessed. A passage whose speaker is not confirmed cannot support
+      a decision, because a decision depends on who holds authority over the subject.</p>
+    <div class="scroll"><table><thead><tr><th>Type</th><th>Subject</th><th>Why</th><th>Passages</th></tr></thead>
+    <tbody>${s.issues.map(i => `<tr>
+      <td><span class="tag ${esc(i.certainty || "unparsed")}">${esc(i.certainty || "unparsed line")}</span></td>
+      <td>${esc(i.speaker || i.passage)}</td>
+      <td style="color:var(--body)">${esc(i.detail)}</td>
+      <td class="mono" style="font-size:12px;color:var(--faint)">${esc((i.passages || [i.passage]).join(" "))}</td>
+    </tr>`).join("")}</tbody></table></div>
+  </section>` : ""}
+
+  <section>
+    <h2>${s.issues.length ? "4" : "3"} · Original and parsed</h2>
+    <p class="lead">Left, the file as supplied. Right, what was made of it. Nothing was rewritten.</p>
+    <div class="side">
+      <div><h3 style="font-size:13px;color:var(--mute);margin:0 0 8px">Source — ${esc(s.source.filename)}</h3>
+        <pre class="out">${esc(transcriptText)}</pre></div>
+      <div><h3 style="font-size:13px;color:var(--mute);margin:0 0 8px">Passages</h3>
+        <div class="panel">${s.passages.map(p => `<div class="psg">
+          <div class="m"><span class="pid mono">${p.id}</span>
+            ${p.time ? `<span class="pid mono">${esc(p.time)}</span>` : ""}
+            ${p.parse === "unparsed"
+              ? `<span class="tag unparsed">unparsed line</span>`
+              : `<span class="tag ${esc(p.speaker.certainty)}">${esc(p.speaker.certainty)}</span>
+                 <span style="color:var(--body)">${esc(p.speaker.designation || p.speaker.raw)}</span>`}
+          </div><p>${esc(p.text)}</p></div>`).join("")}</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>${s.issues.length ? "5" : "4"} · Export</h2>
+    <p class="lead">Versioned JSON (<span class="mono">${esc(s.schema)}</span>) carrying source
+      metadata, passages, speaker resolution and everything unresolved. This is the input to
+      classification — which runs elsewhere, produces records, and puts them in an analyst's queue
+      before they count towards anything.</p>
+    <div class="row">
+      <button class="btn" id="dl">Download JSON</button>
+      <button class="btn ghost" id="copy">Copy JSON</button>
+      <span style="font-size:13px;color:var(--mute)">state: ${esc(s.state)}</span>
+    </div>
+    <pre class="out" style="margin-top:14px">${esc(JSON.stringify(s, null, 2).slice(0, 2600))}${
+      JSON.stringify(s).length > 2600 ? "\n… truncated for display; the download is complete" : ""}</pre>
+  </section>`;
+
+  $("dl").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(structured, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (structured.source.workshop || "transcript") + "-structured.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  $("copy").addEventListener("click", (e) => {
+    navigator.clipboard?.writeText(JSON.stringify(structured, null, 2)).then(() => {
+      e.target.textContent = "Copied";
+      setTimeout(() => { e.target.textContent = "Copy JSON"; }, 1500);
+    }, () => {});
+  });
+}
+
+ready();
+
+</script>
+</body>
+</html>
