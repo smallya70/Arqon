@@ -70,8 +70,24 @@
   .pill.gap{border-color:var(--bad);color:var(--bad)}
   .pill.partial{border-color:var(--mark);color:#92400e}
 
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .scroll table{min-width:600px}
+  .demo{background:#fef3c7;color:#78350f;font-size:12.5px;padding:8px 28px;
+        border-bottom:1px solid #fde68a}
+  .demo b{font-weight:600}
   tbody tr.pick{cursor:pointer}
   tbody tr.pick:hover{background:#f1f5f9}
+  .rolebtn{font:inherit;text-align:left;padding:0;color:var(--ink);text-decoration:underline;
+    text-underline-offset:3px;text-decoration-color:var(--faint)}
+  .rolebtn:hover,.rolebtn:focus-visible{text-decoration-color:var(--ink)}
+  .rolebtn:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+  @media(max-width:700px){
+    .figures{grid-template-columns:repeat(2,1fr)}
+    .bar{padding:12px 16px}main{padding:18px 16px}.demo{padding:8px 16px}
+    footer div{padding:16px}
+    h1{font-size:24px}.fig .n{font-size:24px}
+    .lens{margin-left:0;width:100%}.lens button{flex:1;text-align:center}
+  }
   .compose{border:1px solid var(--line);background:#fff;padding:18px 20px;margin-top:16px}
   .compose label{display:block;font-size:12.5px;color:var(--mute);margin-bottom:6px}
   .compose textarea{width:100%;min-height:84px;resize:vertical;padding:10px;font:inherit;
@@ -92,6 +108,9 @@
 </style>
 </head>
 <body>
+<div class="demo"><b>Demonstration — synthetic data.</b> A constructed programme for a fictional
+client. Figures are illustrative and nothing here is connected to a live register, document store
+or mailbox.</div>
 <header><div class="bar">
   <span class="brand">ARQON</span>
   <span class="client" id="client"></span>
@@ -119,16 +138,18 @@ const PROGRAMME = {
   weeksPlanned: 20,
 };
 
+/* Workshop record counts sum to the record total in BY_KIND. A dashboard whose
+   own figures disagree teaches a reader to distrust all of them. */
 const WORKSHOPS = [
-  ["W-038","Entity structure and ownership","Group","done","2026-07-14",26,0],
-  ["W-039","Chart of accounts alignment","Group","done","2026-07-16",22,1],
-  ["W-040","Close calendar and milestones","Group","done","2026-07-21",18,0],
-  ["W-041","Currency translation","EMEA","done","2026-07-23",24,2],
-  ["W-042","Intercompany and eliminations","EMEA","done","2026-07-28",31,3],
-  ["W-043","Minority interests and equity","Group","done","2026-08-04",19,1],
-  ["W-044","Statutory disclosures","Group","done","2026-08-11",28,4],
-  ["W-045","Intercompany and eliminations","APAC","done","2026-08-18",27,2],
-  ["W-046","Currency translation","APAC","done","2026-08-25",21,1],
+  ["W-038","Entity structure and ownership","Group","done","2026-07-14",29,0],
+  ["W-039","Chart of accounts alignment","Group","done","2026-07-16",25,1],
+  ["W-040","Close calendar and milestones","Group","done","2026-07-21",20,0],
+  ["W-041","Currency translation","EMEA","done","2026-07-23",27,2],
+  ["W-042","Intercompany and eliminations","EMEA","done","2026-07-28",35,3],
+  ["W-043","Minority interests and equity","Group","done","2026-08-04",21,1],
+  ["W-044","Statutory disclosures","Group","done","2026-08-11",31,4],
+  ["W-045","Intercompany and eliminations","APAC","done","2026-08-18",30,2],
+  ["W-046","Currency translation","APAC","done","2026-08-25",28,1],
   ["W-047","Management reporting","Group","scheduled","2026-09-29",0,0],
   ["W-048","Controls and reconciliation","Group","scheduled","2026-10-06",0,0],
   ["W-049","Intercompany and eliminations","Americas","scheduled","2026-10-13",0,0],
@@ -238,6 +259,7 @@ const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">"
 const sum = (a,f) => a.reduce((n,x)=>n+f(x),0);
 
 const totals = {
+  fromWorkshops: sum(WORKSHOPS.filter(w=>w.state==="done"), w=>w.records),
   records: sum(BY_KIND,k=>k.total),
   ready:   sum(BY_KIND,k=>k.ready),
   blocked: sum(BY_KIND,k=>k.blocked),
@@ -249,13 +271,18 @@ const totals = {
   gaps: ARCHETYPES.filter(a=>a[2]==="gap").length,
   queue: sum(ANALYST_QUEUE,q=>q[1]),
 };
+/* Held identities. If either breaks, the page says so rather than showing
+   two numbers that cannot both be true. */
+totals.reconciled = totals.records === totals.fromWorkshops &&
+  totals.ready + totals.blocked === totals.records;
+totals.ownerSum = totals.clientBlocked + totals.diBlocked + totals.unassigned;
 
 const LENS = {
   steering: {
     note: "Steering view. Decisions this committee is being asked to settle, the risks behind " +
           "them, and progress against plan. Delivery mechanics are deliberately not shown.",
-    foot: "Every figure traces to a record, and every record to the passage of the workshop that " +
-          "produced it. Ask for any of them."
+    foot: "In the product every figure traces to a record and every record to the workshop passage " +
+          "that produced it. This page shows the shape of that, not live data."
   },
   lead: {
     note: "Programme lead view. Everything, including analyst queues and archetype coverage. " +
@@ -266,8 +293,8 @@ const LENS = {
   sponsor: {
     note: "Client view. Progress on your programme and what is outstanding with your people. " +
           "Our internal delivery metrics are not shown here.",
-    foot: "Outstanding items sit with named roles in your organisation. Each links to the record " +
-          "and the workshop passage it came from."
+    foot: "Outstanding items sit with named roles in your organisation. In the product each opens " +
+          "the record and the passage it came from."
   },
 };
 
@@ -291,7 +318,7 @@ function headline(lens){
             `next: ${WORKSHOPS.find(w=>w.state==="scheduled").date}`)}
       ${fig(totals.records,"requirements and decisions captured","from your sessions")}
       ${fig(totals.clientBlocked,"items awaiting your people","by role, below",true)}
-      ${fig(totals.contradictions,"contradictions found between your documents","raised as questions")}
+      ${fig(Math.max(...BY_OWNER.map(o=>o.oldestDays)),"days, oldest outstanding item","with one role",true)}
     </div></section>`;
   return `<section>
     <div class="figures">
@@ -332,7 +359,7 @@ function kinds(){
   return `<section><h2>Records by kind</h2>
   <p class="lead">A record is ready when every field its kind requires has been supplied. Most
   blockers are fields nobody stated in the session — they are supplied by a reviewer, not inferred.</p>
-  <table><thead><tr><th>Kind</th><th class="num">Total</th><th class="num">Ready</th>
+  <div class="scroll"><table><thead><tr><th>Kind</th><th class="num">Total</th><th class="num">Ready</th>
     <th class="num">Blocked</th><th style="width:150px"></th><th>Typically waiting on</th></tr></thead>
   <tbody>${BY_KIND.map(k=>`<tr>
     <td>${k.kind}</td><td class="num">${k.total}</td>
@@ -340,34 +367,40 @@ function kinds(){
     <td><span class="bar2"><i class="r" style="width:${k.ready/k.total*100}%"></i>
         <i class="b" style="width:${k.blocked/k.total*100}%"></i></span></td>
     <td style="font-size:13px;color:var(--mute)">${esc(k.blockers)}</td></tr>`).join("")}
-  </tbody></table></section>`;
+  </tbody></table></div></section>`;
 }
 
 function owners(lens){
-  const rows = lens==="sponsor" ? BY_OWNER.filter(o=>o.side!=="DI") : BY_OWNER;
+  /* The sponsor figure counts their own people. Unassigned records are nobody's
+     yet, so they are shown separately rather than folded into that number. */
+  const rows = lens==="sponsor" ? BY_OWNER.filter(o=>o.side==="client") : BY_OWNER;
   return `<section><h2>${lens==="sponsor"?"Outstanding with your people":"Blocked records by owner"}</h2>
   <p class="lead">${lens==="sponsor"
     ? "Each item needs a field supplied, a question answered or an approval given. Nothing moves until it is."
     : "The number that runs a programme. Age is the oldest outstanding item for that role."}</p>
-  <table><thead><tr><th>Role</th>${lens!=="sponsor"?"<th>Side</th>":""}
+  <div class="scroll"><table><thead><tr><th>Role</th>${lens!=="sponsor"?"<th>Side</th>":""}
     <th class="num">Blocked</th><th class="num">Oldest</th><th>Subjects</th></tr></thead>
-  <tbody>${rows.map(o=>`<tr data-role="${esc(o.role)}" class="${
-      (BLOCKED_BY_OWNER[o.role]||[]).length?"pick":""}">
-    <td>${esc(o.role)}${(BLOCKED_BY_OWNER[o.role]||[]).length?'<span class="sub">select to prepare an instruction</span>':""}</td>
+  <tbody>${rows.map(o=>{ const has=(BLOCKED_BY_OWNER[o.role]||[]).length; return `<tr>
+    <td>${has
+      ? `<button class="rolebtn" data-role="${esc(o.role)}" aria-expanded="${ACTION.role===o.role}"
+          aria-controls="action">${esc(o.role)}</button>
+         <span class="sub">prepare an instruction</span>`
+      : esc(o.role)}</td>
     ${lens!=="sponsor"?`<td style="font-size:13px;color:var(--mute)">${o.side}</td>`:""}
     <td class="num ${o.count>15?"bad":""}">${o.count}</td>
     <td class="num ${o.oldestDays>30?"bad":""}">${o.oldestDays}d</td>
-    <td style="font-size:13px;color:var(--body)">${esc(o.topics)}</td></tr>`).join("")}
-  </tbody></table>
-  ${lens!=="sponsor"&&totals.unassigned?`<p class="lead" style="margin-top:12px">
-    <span class="bad">${totals.unassigned} records have no owner at all.</span> Nobody was named in
-    the session and no reviewer has assigned one. They are invisible to everyone until someone is.</p>`:""}
+    <td style="font-size:13px;color:var(--body)">${esc(o.topics)}</td></tr>`;}).join("")}
+  </tbody></table></div>
+  ${totals.unassigned?`<p class="lead" style="margin-top:12px">
+    <span class="bad">${totals.unassigned} records have no owner at all</span>, so they are not counted
+    against any role above. Nobody was named in the session and no reviewer has assigned one. They are
+    invisible to everyone until someone is.</p>`:""}
   </section>`;
 }
 
 const workshops = lens => `<section><h2>Workshops</h2>
-  <table><thead><tr><th>Ref</th><th>Subject</th><th>Region</th><th>Date</th>
-    <th class="num">Records</th>${lens!=="sponsor"?'<th class="num">Contradictions</th>':""}
+  <div class="scroll"><table><thead><tr><th>Ref</th><th>Subject</th><th>Region</th><th>Date</th>
+    <th class="num">Records</th>${lens!=="sponsor"?'<th class="num">Open questions</th>':""}
     <th>Status</th></tr></thead>
   <tbody>${WORKSHOPS.map(w=>`<tr>
     <td class="mono" style="font-size:12.5px">${w.id}</td>
@@ -377,35 +410,37 @@ const workshops = lens => `<section><h2>Workshops</h2>
     <td class="num">${w.records||"—"}</td>
     ${lens!=="sponsor"?`<td class="num ${w.contradictions?"warnx":""}">${w.contradictions||"—"}</td>`:""}
     <td style="font-size:13px" class="${w.state==="done"?"ok":""}">${w.state}</td></tr>`).join("")}
-  </tbody></table></section>`;
+  </tbody></table></div></section>`;
 
 const archetypes = () => `<section><h2>Entity archetype coverage</h2>
   <p class="lead">${PROGRAMME.entities} entities reduced to ${PROGRAMME.archetypes} patterns. A gap
   means no workshop has covered how those entities are treated — the design has nothing to say about
   them yet.</p>
-  <table><thead><tr><th>Archetype</th><th class="num">Entities</th><th>Coverage</th>
+  <div class="scroll"><table><thead><tr><th>Archetype</th><th class="num">Entities</th><th>Coverage</th>
     <th>Evidence</th></tr></thead>
   <tbody>${ARCHETYPES.map(([name,n,status,note])=>`<tr>
     <td>${esc(name)}</td><td class="num">${n}</td>
     <td><span class="pill ${status==="covered"?"":status}">${status}</span></td>
     <td style="font-size:13px;color:var(--mute)">${esc(note)}</td></tr>`).join("")}
-  </tbody></table></section>`;
+  </tbody></table></div></section>`;
 
 const queue = () => `<section><h2>Analyst review queue</h2>
   <p class="lead">Extractions waiting on a human to accept, edit or reject. A queue that stops
   clearing is the first sign a programme is slipping, and it shows here before it shows anywhere else.</p>
-  <table><thead><tr><th>Analyst</th><th class="num">Waiting</th><th>Position</th></tr></thead>
+  <div class="scroll"><table><thead><tr><th>Analyst</th><th class="num">Waiting</th><th>Position</th></tr></thead>
   <tbody>${ANALYST_QUEUE.map(([who,n,note])=>`<tr>
     <td>${esc(who)}</td><td class="num ${n>15?"bad":n?"":"ok"}">${n||"—"}</td>
     <td style="font-size:13px;color:var(--body)">${esc(note)}</td></tr>`).join("")}
-  </tbody></table></section>`;
+  </tbody></table></div></section>`;
 
 /* ------- prepare an instruction for one owner -------
    A static page cannot send anything. What it can do is prepare the two things
    that do work: a prefilled Outlook draft, and the instruction the analyst
    pastes into ARQON to have the register draft it properly. */
 
-let ACTION = { role: null, note: "" };
+let ACTION = { role: null };
+const NOTES = {};                       // one note per role; they are not interchangeable
+const noteFor = (role) => NOTES[role] || "";
 const EMAIL_OF = {
   "Accounting policy lead": "policy.lead@northbridge.example",
   "Group consolidation lead": "consolidation.lead@northbridge.example",
@@ -438,11 +473,11 @@ function actionPanel(){
   const to = EMAIL_OF[role] || "";
   const subject = `${PROGRAMME.client}: ${recs.length} record${recs.length===1?"":"s"} outstanding with you`;
   const href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}`
-             + `&body=${encodeURIComponent(mailBody(role, recs, ACTION.note))}`;
+             + `&body=${encodeURIComponent(mailBody(role, recs, noteFor(role)))}`;
   const instruction =
     `Draft a notification to the ${role} on ${PROGRAMME.ref} for records `
     + recs.map(r=>r[0]).join(", ")
-    + (ACTION.note.trim() ? `.\nContext to include: ${ACTION.note.trim()}` : ".");
+    + (noteFor(role).trim() ? `.\nContext for you when you review the draft: ${noteFor(role).trim()}` : ".");
 
   return `<section id="action">
     <h2>Prepare an instruction — ${esc(role)}</h2>
@@ -450,26 +485,32 @@ function actionPanel(){
     Nothing is sent from this page. It prepares the two things that work: a draft in your own
     Outlook, or an instruction for ARQON to draft it from the register with evidence attached.</p>
 
-    ${recs.length ? `<table><thead><tr><th>Record</th><th>Kind</th><th>Statement</th>
+    ${recs.length ? `<div class="scroll"><table><thead><tr><th>Record</th><th>Kind</th><th>Statement</th>
       <th>Outstanding</th></tr></thead><tbody>
       ${recs.map(([id,kind,text,bl])=>`<tr><td class="mono" style="font-size:12.5px">${id}</td>
         <td style="font-size:13px;color:var(--mute)">${kind}</td><td>${esc(text)}</td>
         <td style="font-size:13px" class="warnx">${esc(bl)}</td></tr>`).join("")}
-      </tbody></table>`
+      </tbody></table></div>`
      : `<p class="lead">No records are listed against this role.</p>`}
 
     <div class="compose">
-      <label for="note">Your instruction to them — optional, included in both outputs</label>
-      <textarea id="note" placeholder="e.g. We need these before the design review on the 14th. The tolerance question is blocking the intercompany build.">${esc(ACTION.note)}</textarea>
+      <label for="note">Your instruction — optional. Included verbatim in the email app message;
+      passed to the analyst as context for the ARQON route.</label>
+      <textarea id="note" placeholder="e.g. We need these before the design review on the 14th. The tolerance question is blocking the intercompany build.">${esc(noteFor(role))}</textarea>
       <div class="acts">
-        <a class="btn" href="${href}">Open a draft in Outlook</a>
+        <a class="btn" href="${href}">Open in email app</a>
         <button class="btn ghost" data-copy="1">Copy instruction for ARQON</button>
         <button class="link" data-close="1">Close</button>
       </div>
       <pre class="inst" id="inst">${esc(instruction)}</pre>
-      <p class="caveat">The Outlook draft is plain text and carries no evidence links. The ARQON
-      instruction produces a draft that cites the workshop passage behind every record, and records
-      the notification in the outbox. Both leave the sending to you.</p>
+      <p class="caveat"><strong>What each does.</strong> “Open in email app” hands the text to
+      whatever mail application this machine is set to use. It composes a message; it creates no
+      draft here and logs nothing. Your note is included in it verbatim.<br><br>
+      The ARQON instruction is for the analyst to paste into the register. The draft it produces
+      uses a fixed server-side template and cites the workshop passage behind every record — which
+      is why <strong>your note is carried as context for the analyst, not inserted into that
+      email</strong>. The template wording is not something a note can change. Both leave the
+      sending to a person.</p>
     </div>
   </section>`;
 }
@@ -492,9 +533,9 @@ let CURRENT = "lead";
 
 document.addEventListener("click", e=>{
   const lensBtn = e.target.closest("[data-lens]");
-  if(lensBtn){ CURRENT = lensBtn.dataset.lens; ACTION = {role:null,note:""}; render(CURRENT); return; }
+  if(lensBtn){ CURRENT = lensBtn.dataset.lens; ACTION = {role:null}; render(CURRENT); return; }
 
-  if(e.target.closest("[data-close]")){ ACTION = {role:null,note:""}; render(CURRENT); return; }
+  if(e.target.closest("[data-close]")){ ACTION = {role:null}; render(CURRENT); return; }
 
   if(e.target.closest("[data-copy]")){
     const text = document.getElementById("inst").textContent;
@@ -506,11 +547,13 @@ document.addEventListener("click", e=>{
     return;
   }
 
-  const row = e.target.closest("tr[data-role]");
-  if(row && row.classList.contains("pick")){
-    ACTION = { role: row.dataset.role, note: ACTION.note };
+  const roleBtn = e.target.closest("button[data-role]");
+  if(roleBtn){
+    ACTION = { role: roleBtn.dataset.role };
     render(CURRENT);
-    document.getElementById("action")?.scrollIntoView({behavior:"smooth",block:"start"});
+    const panel = document.getElementById("action");
+    panel?.scrollIntoView({behavior:"smooth",block:"start"});
+    document.getElementById("note")?.focus();
   }
 });
 
@@ -518,19 +561,20 @@ document.addEventListener("click", e=>{
    re-rendering the field out from under the cursor. */
 document.addEventListener("input", e=>{
   if(e.target.id !== "note") return;
-  ACTION.note = e.target.value;
+  NOTES[ACTION.role] = e.target.value;
+  const note = noteFor(ACTION.role);
   const recs = BLOCKED_BY_OWNER[ACTION.role] || [];
   const inst = document.getElementById("inst");
   if(inst) inst.textContent =
     `Draft a notification to the ${ACTION.role} on ${PROGRAMME.ref} for records `
     + recs.map(r=>r[0]).join(", ")
-    + (ACTION.note.trim() ? `.\nContext to include: ${ACTION.note.trim()}` : ".");
+    + (noteFor(role).trim() ? `.\nContext for you when you review the draft: ${noteFor(role).trim()}` : ".");
   const link = document.querySelector("#action a.btn");
   if(link){
     const to = EMAIL_OF[ACTION.role] || "";
     const subject = `${PROGRAMME.client}: ${recs.length} record${recs.length===1?"":"s"} outstanding with you`;
     link.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}`
-              + `&body=${encodeURIComponent(mailBody(ACTION.role, recs, ACTION.note))}`;
+              + `&body=${encodeURIComponent(mailBody(ACTION.role, recs, note))}`;
   }
 });
 
