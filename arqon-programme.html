@@ -124,175 +124,321 @@ or mailbox.</div>
 <main id="main"></main>
 <footer><div id="foot"></div></footer>
 <script>
-/* Synthetic programme, shaped like the one in the platform brief:
-   214 subsidiaries, 12 workstreams, 14 workshops. Nothing here is real. */
+/* One dataset. Both views derive every figure from it.
+
+   Deliberately small: 4 completed workshops and 47 records, not the 200+ a real
+   programme produces. Every number on every screen traces to a record below, so
+   a reader can count them. A dashboard whose totals cannot be reconciled to its
+   own data teaches people to distrust all of it.
+
+   Synthetic throughout. Fictional client, constructed sessions. */
 
 const PROGRAMME = {
-  client: "Northbridge Group",
-  name: "Consolidation replacement",
-  ref: "PRG-001",
-  phase: "Design",
-  entities: 214,
-  archetypes: 12,
-  weeksElapsed: 9,
-  weeksPlanned: 20,
+  client: "Northbridge Group", name: "Consolidation replacement", ref: "PRG-001",
+  phase: "Design", entities: 214, weeksElapsed: 9, weeksPlanned: 20,
 };
 
-/* Workshop record counts sum to the record total in BY_KIND. A dashboard whose
-   own figures disagree teaches a reader to distrust all of them. */
+/* Programme responsibility. Separate from corporate ownership: a parent company
+   does not decide who approves an accounting treatment. */
+const ROLES = [
+  { role: "Accounting policy lead",      side: "client", email: "policy.lead@northbridge.example" },
+  { role: "Group consolidation lead",    side: "client", email: "consolidation.lead@northbridge.example" },
+  { role: "Group controller",            side: "client", email: "controller@northbridge.example" },
+  { role: "Regional finance lead, EMEA", side: "client", email: "emea.finance@northbridge.example" },
+  { role: "Regional finance lead, APAC", side: "client", email: "apac.finance@northbridge.example" },
+  { role: "Finance control and audit",   side: "client", email: "control@northbridge.example" },
+  { role: "Programme data architect",    side: "DI",     email: "data.architect@diintl.com" },
+];
+
 const WORKSHOPS = [
-  ["W-038","Entity structure and ownership","Group","done","2026-07-14",29,0],
-  ["W-039","Chart of accounts alignment","Group","done","2026-07-16",25,1],
-  ["W-040","Close calendar and milestones","Group","done","2026-07-21",20,0],
-  ["W-041","Currency translation","EMEA","done","2026-07-23",27,2],
-  ["W-042","Intercompany and eliminations","EMEA","done","2026-07-28",35,3],
-  ["W-043","Minority interests and equity","Group","done","2026-08-04",21,1],
-  ["W-044","Statutory disclosures","Group","done","2026-08-11",31,4],
-  ["W-045","Intercompany and eliminations","APAC","done","2026-08-18",30,2],
-  ["W-046","Currency translation","APAC","done","2026-08-25",28,1],
-  ["W-047","Management reporting","Group","scheduled","2026-09-29",0,0],
-  ["W-048","Controls and reconciliation","Group","scheduled","2026-10-06",0,0],
-  ["W-049","Intercompany and eliminations","Americas","scheduled","2026-10-13",0,0],
-  ["W-050","Migration and opening balances","Group","scheduled","2026-10-20",0,0],
-  ["W-051","Security and segregation of duties","Group","scheduled","2026-10-27",0,0],
-].map(([id,title,region,state,date,records,contradictions])=>
-  ({id,title,region,state,date,records,contradictions}));
-
-/* Records rolled up. blocked_on is the field class holding each one back. */
-const BY_KIND = [
-  ["Requirement", 94, 61, 33, "priority, acceptance criteria, entity scope"],
-  ["Decision",    38, 34,  4, "confirmed authority"],
-  ["Open question",41, 12, 29, "owner, answer outstanding"],
-  ["Issue",       17,  9,  8, "impact, resolution"],
-  ["Risk",         9,  5,  4, "owner, mitigation"],
-  ["Exception",   14,  4, 10, "baseline rule, end date, approver"],
-  ["Action",      22, 15,  7, "due date"],
-  ["Assumption",  11,  6,  5, "validation date"],
-].map(([kind,total,ready,blocked,blockers])=>({kind,total,ready,blocked,blockers}));
-
-/* Who is holding things up, and for how long. The number that runs a programme. */
-const BY_OWNER = [
-  ["Accounting policy lead","client",23,41,"Statutory disclosures, hyperinflation treatment"],
-  ["Group consolidation lead","client",18,22,"Intercompany tolerances, close calendar"],
-  ["Programme data architect","DI",11,9,"Entity master, effective dating"],
-  ["Regional finance lead, APAC","client",9,34,"Local GAAP variations"],
-  ["Regional finance lead, EMEA","client",7,12,"Intercompany counterparty data"],
-  ["Finance control and audit","client",6,28,"Control design, SoD"],
-  ["Unassigned","—",26,17,"No owner named in the session"],
-].map(([role,side,count,oldestDays,topics])=>({role,side,count,oldestDays,topics}));
-
-/* What steering is actually being asked to settle. */
-const STEERING_DECISIONS = [
-  ["SD-01","Ownership register cadence",
-   "Legal provides a quarterly extract with no effective dates. Mid-period acquisitions cannot consolidate from the acquisition date without a monthly, dated feed.",
-   "Blocks 14 requirements across entity structure and ownership.","Legal and Group Finance","raised 5 weeks ago"],
-  ["SD-02","Hyperinflationary entity treatment",
-   "Turkey and Argentina restate under IAS 29 before translating. The departure is permanent, so it is not an exception and needs classifying as a standing local treatment.",
-   "Blocks the translation design for 2 entities and the archetype model.","Accounting policy","raised 3 weeks ago"],
-  ["SD-03","Manual NCI calculation",
-   "NCI is calculated in a spreadsheet and posted by journal. One posting was misstated last year and corrected at review.",
-   "Named by the policy lead as the largest manual risk in the close.","Group Finance","raised 2 weeks ago"],
+  { id:"W-038", title:"Entity structure and ownership", region:"Group", state:"done", date:"2026-07-14" },
+  { id:"W-041", title:"Currency translation",           region:"EMEA",  state:"done", date:"2026-07-23" },
+  { id:"W-042", title:"Intercompany and eliminations",  region:"EMEA",  state:"done", date:"2026-07-28" },
+  { id:"W-043", title:"Minority interests and equity",  region:"Group", state:"done", date:"2026-08-04" },
+  { id:"W-047", title:"Management reporting",           region:"Group", state:"scheduled", date:"2026-09-29" },
+  { id:"W-048", title:"Controls and reconciliation",    region:"Group", state:"scheduled", date:"2026-10-06" },
+  { id:"W-049", title:"Intercompany and eliminations",  region:"Americas", state:"scheduled", date:"2026-10-13" },
+  { id:"W-050", title:"Migration and opening balances", region:"Group", state:"scheduled", date:"2026-10-20" },
 ];
 
-const RISKS = [
-  ["R-01","Ownership data cannot be supplied with effective dates","high",
-   "Design assumes dated entity membership. If legal cannot supply it, the elimination and NCI design changes materially.","Programme data architect"],
-  ["R-02","Two acquired entities remain on a legacy ledger until the 2027 close","medium",
-   "Manual submission for the first two close cycles. Exception has no approver and no documented baseline.","Group consolidation lead"],
-  ["R-03","Statutory disclosure scope underestimated","medium",
-   "IFRS 16 and revenue recognition treatments were raised late and are not yet reflected in the workstream plan.","Accounting policy lead"],
-];
-
-/* Archetype coverage — the thing that makes 214 entities tractable. */
-const ARCHETYPES = [
-  ["Wholly owned trading, single ERP",71,"covered","W-038, W-042"],
-  ["Wholly owned trading, legacy ERP",34,"covered","W-038, W-045"],
-  ["Majority owned with NCI",28,"covered","W-043"],
-  ["Equity accounted associate",19,"partial","W-043 — treatment disputed for 1 entity"],
-  ["Joint venture, proportionate",12,"gap","no workshop covers this yet"],
-  ["Hyperinflationary economy",2,"partial","W-041 — classification unresolved"],
-  ["Dormant / in liquidation",16,"gap","no workshop covers this yet"],
-  ["Branch, no separate ledger",9,"covered","W-038"],
-  ["Recently acquired, pre-integration",8,"partial","W-042 — exception pending approval"],
-  ["Holding company, no trade",11,"covered","W-038"],
-  ["Regulated entity, local GAAP",3,"gap","no workshop covers this yet"],
-  ["Shared service centre",1,"covered","W-040"],
-];
-
-/* Representative blocked records per owner, so an instruction can name them.
-   In the product these come from the register; here they are illustrative. */
-const BLOCKED_BY_OWNER = {
- "Accounting policy lead": [
-  ["IC-014","Requirement","Restate hyperinflationary entities under IAS 29 before translating at closing rate.","priority, acceptance criteria"],
-  ["Q-008","Open question","How is a permanent departure from the group translation baseline classified?","answer outstanding"],
-  ["EX-003","Exception","Two Spanish entities submit intercompany manually until the 2027 close.","baseline rule, approver"],
-  ["IC-021","Requirement","Disclose IFRS 16 lease liabilities by maturity band in the statutory pack.","acceptance criteria, entity scope"],
- ],
- "Group consolidation lead": [
-  ["IC-002","Requirement","Reject intercompany submissions with no valid counterparty at the point of entry.","priority, acceptance criteria"],
-  ["Q-003","Open question","What tolerance applies, and does it differ by balance type?","answer outstanding"],
-  ["A-011","Action","Confirm the close calendar milestones with regional controllers.","due date"],
- ],
- "Programme data architect": [
-  ["IC-007","Requirement","Hold entity ownership with effective dates so mid-period acquisitions consolidate from the acquisition date.","entity scope"],
-  ["Q-005","Open question","Can legal supply ownership data carrying effective dates?","answer outstanding"],
- ],
- "Regional finance lead, APAC": [
-  ["IC-018","Requirement","Support local GAAP reporting alongside group IFRS for regulated entities.","priority, entity scope"],
-  ["IS-004","Issue","Three APAC entities applied period-end rate to revenue contrary to group policy.","impact"],
- ],
- "Regional finance lead, EMEA": [
-  ["IC-005","Requirement","Capture counterparty on intercompany balances at account level.","acceptance criteria"],
- ],
- "Finance control and audit": [
-  ["IC-030","Requirement","Detect conflicting duties across submission and approval through a periodic report.","acceptance criteria, owner"],
- ],
- "Unassigned": [],
+/* W-042 in full, so the workshop view can show the transcript that produced its
+   records and each record can cite the passage behind it. */
+const PASSAGES = {
+  "W-042": [
+    ["P-001","14:28","Facilitator","Let's take intercompany submission. Walk me through what happens today."],
+    ["P-002","14:29","Regional finance lead, EMEA","The European entities submit intercompany balances by account, but not by partner. It's never been a field in the local template."],
+    ["P-003","14:31","Group controller","North America gives us partner detail. I pull both sides, match what I can in a spreadsheet, and chase the rest by email."],
+    ["P-004","14:32","Facilitator","How long does that take you at close?"],
+    ["P-005","14:32","Group controller","Two days. Three when the tolerances get argued. There's no agreed tolerance written down anywhere — I use fifty thousand euro as a rule of thumb but nobody has signed that off."],
+    ["P-006","14:35","Accounting policy lead","That needs formalising. Different tolerance for trading balances versus loan balances, I'd expect. Loans should match exactly."],
+    ["P-007","14:36","Group controller","Agreed. And we need to stop submissions arriving with no counterparty at all. Right now the system accepts them and I find out at day four."],
+    ["P-008","14:38","Regional finance lead, EMEA","Two of the Spanish entities can't do that yet. They came in with last year's acquisition and they're still on their old ledger until the 2027 close. They'll have to upload manually."],
+    ["P-009","14:39","Accounting policy lead","Fine as a documented exception, but it needs group sign-off, not a local arrangement."],
+    ["P-010","14:42","Group controller","One more. The ownership register shows the Portuguese entity at sixty percent, but the consolidation workbook has treated it as an associate for two years. Somebody needs to tell me which is right before we design the elimination rules."],
+    ["P-011","14:43","Facilitator","Who owns closing that?"],
+    ["P-012","14:43","Accounting policy lead","I'll take it. I need legal to confirm the shareholder agreement first."],
+  ].map(([id,t,who,text])=>({id,t,who,text})),
 };
+
+/* r(): id, workshop, kind, type, statement, owner, ownerOrigin, passages, quote,
+        reviewStatus, blockers, ageDays */
+const r = (id, ws, kind, type, statement, owner, ownerOrigin, passages, quote, reviewStatus, blockers, ageDays) =>
+  ({ id, workshop: ws, kind, type, statement, owner, ownerOrigin, passages, quote,
+     reviewStatus, blockers, ageDays });
+
+const AP = "Accounting policy lead", GC = "Group consolidation lead", CTL = "Group controller",
+      EMEA = "Regional finance lead, EMEA", APAC = "Regional finance lead, APAC",
+      CTRL = "Finance control and audit", DA = "Programme data architect", NONE = null;
+
+const RECORDS = [
+  /* ---- W-042 intercompany: the seven the workshop view shows, plus five more ---- */
+  r("IC-001","W-042","Requirement","Control","Reject intercompany submissions with no valid counterparty at the point of entry.",
+    GC,"reviewer-added",["P-007"],"we need to stop submissions arriving with no counterparty at all",
+    "Approved",["priority","acceptance criteria"],22),
+  r("D-001","W-042","Decision","Policy","Loan balances match exactly, with no tolerance applied.",
+    NONE,null,["P-006","P-007"],"Loans should match exactly","Approved",[],22),
+  r("Q-001","W-042","Open question","n/a","What tolerance applies, and does it differ by balance type?",
+    GC,"reviewer-added",["P-005","P-006"],"no agreed tolerance written down anywhere","Approved",["answer outstanding"],22),
+  r("EX-001","W-042","Exception","Process","Two Spanish entities submit intercompany manually until the 2027 close.",
+    NONE,null,["P-008","P-009"],"still on their old ledger until the 2027 close","Approved",["baseline rule","approver"],22),
+  r("IS-001","W-042","Issue","n/a","The controller reports the ownership register at 60% while the consolidation workbook treats the entity as an associate.",
+    CTL,"reviewer-added",["P-010"],"register shows sixty percent... treated it as an associate","Approved",["impact"],22),
+  r("Q-002","W-042","Open question","n/a","Which treatment is correct for the Portuguese entity?",
+    AP,"stated",["P-010","P-011","P-012"],"Somebody needs to tell me which is right","Approved",["answer outstanding"],22),
+  r("A-001","W-042","Action","n/a","Confirm the Portuguese shareholder agreement with legal.",
+    AP,"stated",["P-012"],"I need legal to confirm the shareholder agreement first","Approved",["due date"],22),
+  r("IC-002","W-042","Requirement","Data","Capture counterparty on intercompany balances at account level.",
+    EMEA,"reviewer-added",["P-002"],"submit by account, but not by partner","Approved",["acceptance criteria"],22),
+  r("IC-003","W-042","Requirement","Functional","Match intercompany balances by entity, counterparty and account.",
+    GC,"reviewer-added",["P-003"],"I pull both sides, match what I can","Approved",[],22),
+  r("R-001","W-042","Risk","n/a","Manual intercompany matching consumes two to three days of the close.",
+    CTL,"reviewer-added",["P-005"],"Two days. Three when the tolerances get argued","Approved",[],22),
+  r("IC-004","W-042","Requirement","Workflow","Route unmatched intercompany differences to the owning entity for response.",
+    GC,"reviewer-added",["P-003"],"chase the rest by email","Approved",["priority","acceptance criteria"],22),
+  r("AS-001","W-042","Assumption","n/a","All EMEA entities can add a counterparty field to the local submission template.",
+    EMEA,"reviewer-added",["P-002"],"It's never been a field in the local template","Approved",["validation date"],22),
+
+  /* ---- W-038 entity structure and ownership ---- */
+  r("IC-010","W-038","Requirement","Data","Hold entity ownership with effective dates so mid-period acquisitions consolidate from the acquisition date.",
+    DA,"reviewer-added",["P-019"],"The system must hold entity ownership with effective dates","Approved",["entity scope"],41),
+  r("Q-010","W-038","Open question","n/a","Can legal supply ownership data carrying effective dates?",
+    CTL,"stated",["P-021"],"I don't know whether their system holds effective dates at all","Approved",["answer outstanding"],41),
+  r("A-010","W-038","Action","n/a","Ask legal whether their system holds ownership effective dates.",
+    CTL,"stated",["P-021"],"I'll ask","Approved",["due date"],41),
+  r("IC-011","W-038","Requirement","Integration","Feed the ownership register extract into the consolidation model at least monthly.",
+    DA,"reviewer-added",["P-017"],"I'd want the register to feed through monthly at least","Approved",["priority","acceptance criteria"],41),
+  r("IS-010","W-038","Issue","n/a","A November acquisition did not reach the consolidation model until February.",
+    GC,"reviewer-added",["P-016"],"didn't reach the consolidation model until February","Approved",["impact"],41),
+  r("D-010","W-038","Decision","Policy","Entity master is maintained by Legal and consumed, not edited, by Finance.",
+    NONE,null,["P-015"],"Legal maintains it","Approved",[],41),
+  r("IC-012","W-038","Requirement","Data","Record the twelve entity archetypes against every subsidiary in the entity master.",
+    DA,"reviewer-added",["P-022"],"we need a way to group them","Approved",["acceptance criteria"],41),
+  r("Q-011","W-038","Open question","n/a","How are dormant and in-liquidation entities treated in the consolidation scope?",
+    NONE,null,["P-024"],"what about the dormant ones","Approved",["owner","answer outstanding"],41),
+  r("Q-012","W-038","Open question","n/a","Which entity codes are authoritative where ERP and legal registers disagree?",
+    NONE,null,["P-026"],"the codes don't always line up","Approved",["owner","answer outstanding"],41),
+  r("IC-013","W-038","Requirement","Migration","Load historic entity membership so prior-period comparatives restate correctly.",
+    DA,"reviewer-added",["P-028"],"we'll need the history as well","Approved",["priority","entity scope"],41),
+  r("R-010","W-038","Risk","n/a","Ownership data may not be supplied with effective dates, changing the elimination design.",
+    DA,"reviewer-added",["P-021"],"I don't know whether their system holds effective dates","Approved",[],41),
+
+  /* ---- W-041 currency translation ---- */
+  r("IC-020","W-041","Requirement","Functional","Apply closing rate to balance sheet accounts and average rate to income statement accounts.",
+    AP,"reviewer-added",["P-009"],"the system must apply closing rate to balance sheet accounts","Approved",["priority","acceptance criteria"],34),
+  r("IC-021","W-041","Requirement","Control","Prevent local override of the translation rate applied to each account type.",
+    CTRL,"reviewer-added",["P-009"],"with no local override. That needs to be enforced","Approved",["acceptance criteria","owner"],34),
+  r("IC-022","W-041","Requirement","Regulatory","Restate hyperinflationary entities under IAS 29 before translating at closing rate.",
+    AP,"reviewer-added",["P-010","P-011"],"Those restate first and then translate at closing","Approved",["priority","acceptance criteria"],34),
+  r("Q-020","W-041","Open question","n/a","How is a permanent departure from the group translation baseline classified?",
+    AP,"reviewer-added",["P-012","P-013"],"So yes, indefinite","Approved",["answer outstanding"],34),
+  r("IS-020","W-041","Issue","n/a","Three APAC entities applied period-end rate to revenue contrary to group policy.",
+    APAC,"reviewer-added",["P-003"],"three entities have been using period-end for revenue","Approved",["impact"],34),
+  r("Q-021","W-041","Open question","n/a","Was Vietnam's revenue translation corrected, and when?",
+    APAC,"reviewer-added",["P-005","P-006","P-008"],"We fixed Vietnam in March","Approved",["answer outstanding"],34),
+  r("IC-023","W-041","Requirement","Reporting","Present the cumulative translation adjustment as a separate component of equity.",
+    AP,"reviewer-added",["P-030"],"CTA has to show separately","Approved",["acceptance criteria"],34),
+  r("Q-022","W-041","Open question","n/a","Should CTA reconciliation be performed in the system, and does the platform support it?",
+    NONE,null,["P-030","P-031","P-032"],"I don't know what the platform supports","Approved",["owner","answer outstanding"],34),
+  r("A-020","W-041","Action","n/a","Check platform support for CTA reconciliation before committing to it.",
+    DA,"reviewer-added",["P-032"],"I'd want someone to check before we commit","Approved",["due date"],34),
+  r("D-020","W-041","Decision","Policy","Hyperinflationary treatment applies to Turkey and Argentina only.",
+    NONE,null,["P-011"],"Turkey and Argentina","Approved",[],34),
+  r("AS-020","W-041","Assumption","n/a","Rate tables are supplied monthly by Treasury in a consistent format.",
+    NONE,null,["P-034"],"Treasury send the rates","Approved",["owner","validation date"],34),
+
+  /* ---- W-043 minority interests and equity ---- */
+  r("IC-030","W-043","Requirement","Functional","Calculate non-controlling interests from ownership percentages rather than by manual journal.",
+    AP,"reviewer-added",["P-025"],"NCI should be calculated by the system","Approved",["acceptance criteria"],28),
+  r("IS-030","W-043","Issue","n/a","A manual NCI journal was posted wrong by about four hundred thousand and corrected at review.",
+    CTL,"reviewer-added",["P-024"],"that journal was wrong by about four hundred thousand","Approved",["impact"],28),
+  r("R-030","W-043","Risk","n/a","Manual NCI calculation is the largest manual risk in the close.",
+    CTL,"reviewer-added",["P-027"],"the single biggest manual risk in the close","Approved",[],28),
+  r("IC-031","W-043","Requirement","Reporting","Present non-controlling interests by entity in the group reporting pack.",
+    NONE,null,["P-028"],"NCI split by entity in the reporting pack","Approved",["owner","priority"],28),
+  r("Q-030","W-043","Open question","n/a","How are changes in ownership percentage without loss of control accounted for?",
+    AP,"reviewer-added",["P-031"],"what happens when we buy up","Approved",["answer outstanding"],28),
+  r("IC-032","W-043","Requirement","Functional","Recalculate non-controlling interests when ownership changes mid-period.",
+    AP,"reviewer-added",["P-031"],"what happens when we buy up","Approved",["priority","acceptance criteria"],28),
+  r("D-030","W-043","Decision","Policy","Equity-accounted entities are reported at a single line with no proportionate consolidation.",
+    NONE,null,["P-033"],"one line, that's all we need","Approved",[],28),
+  r("EX-030","W-043","Exception","Process","The Kessler joint venture is proportionately consolidated until the 2027 review.",
+    NONE,null,["P-035"],"proportionate for the JV until we revisit","Approved",["baseline rule","approver","end date"],28),
+  r("Q-031","W-043","Open question","n/a","Which entities carry a shareholder agreement that overrides the ownership percentage?",
+    AP,"reviewer-added",["P-036"],"there are agreements that change it","Approved",["answer outstanding"],28),
+  r("IC-033","W-043","Requirement","Control","Reconcile the non-controlling interest balance to the ownership register each close.",
+    CTRL,"reviewer-added",["P-037"],"we'd want that tied back","Approved",["acceptance criteria","owner"],28),
+  r("A-030","W-043","Action","n/a","Obtain the shareholder agreements for the four entities with disputed percentages.",
+    NONE,null,["P-036"],"there are agreements that change it","Approved",["owner","due date"],28),
+  r("AS-030","W-043","Assumption","n/a","Ownership percentages in the register are current as at the reporting date.",
+    DA,"reviewer-added",["P-038"],"we take the register as read","Approved",["validation date"],28),
+
+  /* ---- awaiting analyst review: not yet in any approved figure ---- */
+  r("IC-040","W-043","Requirement","Security","Restrict journal posting to users without submission rights.",
+    NONE,null,["P-040"],"the same person shouldn't do both","Analyst reviewed",["owner","acceptance criteria"],28),
+  r("Q-040","W-043","Open question","n/a","Does the platform support segregation of duties at entity level?",
+    NONE,null,["P-041"],"can it do that per entity","Analyst reviewed",["owner","answer outstanding"],28),
+];
+
+/* Archetype coverage. Each maps to the workshops that establish its treatment. */
+const ARCHETYPES = [
+  ["Wholly owned trading, single ERP",71,["W-038","W-042"]],
+  ["Wholly owned trading, legacy ERP",34,["W-038"]],
+  ["Majority owned with NCI",28,["W-043"]],
+  ["Equity accounted associate",19,["W-043"]],
+  ["Joint venture, proportionate",12,["W-043"]],
+  ["Hyperinflationary economy",2,["W-041"]],
+  ["Dormant / in liquidation",16,[]],
+  ["Branch, no separate ledger",9,["W-038"]],
+  ["Recently acquired, pre-integration",8,["W-042"]],
+  ["Holding company, no trade",11,["W-038"]],
+  ["Regulated entity, local GAAP",3,[]],
+  ["Shared service centre",1,[]],
+];
 
 const ANALYST_QUEUE = [
-  ["M. Torres",9,"W-046 extraction reviewed to passage 180 of 240"],
-  ["P. Nair",0,"clear"],
-  ["J. Whitfield",23,"W-045 not started — on leave until Monday"],
+  ["M. Torres", 0, "clear"],
+  ["P. Nair", 2, "W-043 segregation of duties, two candidates outstanding"],
 ];
-const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const sum = (a,f) => a.reduce((n,x)=>n+f(x),0);
 
-const totals = {
-  fromWorkshops: sum(WORKSHOPS.filter(w=>w.state==="done"), w=>w.records),
-  records: sum(BY_KIND,k=>k.total),
-  ready:   sum(BY_KIND,k=>k.ready),
-  blocked: sum(BY_KIND,k=>k.blocked),
-  done:    WORKSHOPS.filter(w=>w.state==="done").length,
-  contradictions: sum(WORKSHOPS,w=>w.contradictions),
-  clientBlocked: sum(BY_OWNER.filter(o=>o.side==="client"),o=>o.count),
-  diBlocked:     sum(BY_OWNER.filter(o=>o.side==="DI"),o=>o.count),
-  unassigned:    BY_OWNER.find(o=>o.role==="Unassigned").count,
-  gaps: ARCHETYPES.filter(a=>a[2]==="gap").length,
-  queue: sum(ANALYST_QUEUE,q=>q[1]),
+/* Everything both views display, computed from RECORDS. Nothing is stated twice.
+
+   The rule: if a figure appears on a screen, it is derived here. A hardcoded
+   total is a figure that can drift from its own data, and a reader who catches
+   one stops believing the rest. */
+
+
+
+/* Only analyst-reviewed records count towards programme figures. Anything still
+   in the queue has not been confirmed as an accurate capture. */
+const approved = RECORDS.filter(r => r.reviewStatus === "Approved");
+const inQueue  = RECORDS.filter(r => r.reviewStatus !== "Approved");
+
+const isReady = (r) => r.blockers.length === 0;
+
+const byKind = () => {
+  const m = new Map();
+  for (const r of approved) {
+    if (!m.has(r.kind)) m.set(r.kind, { kind: r.kind, total: 0, ready: 0, blocked: 0, blockers: new Set() });
+    const k = m.get(r.kind);
+    k.total++;
+    isReady(r) ? k.ready++ : k.blocked++;
+    r.blockers.forEach(b => k.blockers.add(b));
+  }
+  return [...m.values()]
+    .map(k => ({ ...k, blockers: [...k.blockers].join(", ") || "—" }))
+    .sort((a, b) => b.total - a.total);
 };
-/* Held identities. If either breaks, the page says so rather than showing
-   two numbers that cannot both be true. */
-totals.reconciled = totals.records === totals.fromWorkshops &&
-  totals.ready + totals.blocked === totals.records;
-totals.ownerSum = totals.clientBlocked + totals.diBlocked + totals.unassigned;
+
+const byOwner = () => {
+  const m = new Map();
+  for (const r of approved.filter(r => !isReady(r))) {
+    const role = r.owner || "Unassigned";
+    if (!m.has(role)) m.set(role, { role, count: 0, oldestDays: 0, subjects: new Set() });
+    const o = m.get(role);
+    o.count++;
+    o.oldestDays = Math.max(o.oldestDays, r.ageDays);
+    const ws = WORKSHOPS.find(w => w.id === r.workshop);
+    if (ws) o.subjects.add(ws.title);
+  }
+  return [...m.values()]
+    .map(o => ({
+      ...o,
+      side: ROLES.find(x => x.role === o.role)?.side || "—",
+      email: ROLES.find(x => x.role === o.role)?.email || "",
+      subjects: [...o.subjects].join(", "),
+    }))
+    .sort((a, b) => b.count - a.count || b.oldestDays - a.oldestDays);
+};
+
+const blockedFor = (role) =>
+  approved.filter(r => !isReady(r) && (r.owner || "Unassigned") === role);
+
+const recordsFor = (workshopId) => RECORDS.filter(r => r.workshop === workshopId);
+
+const workshopRows = () => WORKSHOPS.map(w => {
+  const rs = recordsFor(w.id).filter(r => r.reviewStatus === "Approved");
+  return {
+    ...w,
+    records: rs.length,
+    questions: rs.filter(r => r.kind === "Open question").length,
+  };
+});
+
+const coverage = () => ARCHETYPES.map(([name, entities, workshops]) => ({
+  name, entities, workshops,
+  status: workshops.length === 0 ? "gap"
+        : workshops.some(id => recordsFor(id).some(r => r.blockers.length)) ? "partial"
+        : "covered",
+  note: workshops.length ? `established in ${workshops.join(", ")}` : "no workshop covers this yet",
+}));
+
+const totals = () => {
+  const k = byKind(), o = byOwner();
+  const done = WORKSHOPS.filter(w => w.state === "done");
+  const t = {
+    workshopsDone: done.length,
+    workshopsTotal: WORKSHOPS.length,
+    records: approved.length,
+    ready: approved.filter(isReady).length,
+    blocked: approved.filter(r => !isReady(r)).length,
+    queue: inQueue.length,
+    clientBlocked: o.filter(x => x.side === "client").reduce((n, x) => n + x.count, 0),
+    diBlocked:     o.filter(x => x.side === "DI").reduce((n, x) => n + x.count, 0),
+    unassigned:    o.find(x => x.role === "Unassigned")?.count || 0,
+    oldestDays: Math.max(0, ...o.map(x => x.oldestDays)),
+    gaps: coverage().filter(c => c.status === "gap").length,
+    openQuestions: approved.filter(r => r.kind === "Open question").length,
+  };
+  t.fromWorkshops = workshopRows().reduce((n, w) => n + w.records, 0);
+  t.fromKinds     = k.reduce((n, x) => n + x.total, 0);
+  /* Identities that must hold. Checked rather than assumed. */
+  t.reconciled =
+    t.records === t.fromWorkshops &&
+    t.records === t.fromKinds &&
+    t.ready + t.blocked === t.records &&
+    t.clientBlocked + t.diBlocked + t.unassigned === t.blocked;
+  return t;
+};
+
+const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const T = totals(), KINDS = byKind(), OWNERS = byOwner(), WS = workshopRows(), COV = coverage();
 
 const LENS = {
   steering: {
-    note: "Steering view. Decisions this committee is being asked to settle, the risks behind " +
-          "them, and progress against plan. Delivery mechanics are deliberately not shown.",
-    foot: "In the product every figure traces to a record and every record to the workshop passage " +
-          "that produced it. This page shows the shape of that, not live data."
+    note: "Steering view. What this committee is being asked to settle, and progress against plan. " +
+          "Delivery mechanics are not shown.",
+    foot: "Every figure on this page is counted from the " + T.records + " records in the register. " +
+          "In the product each opens the workshop passage that produced it."
   },
   lead: {
-    note: "Programme lead view. Everything, including analyst queues and archetype coverage. " +
-          "This is the working screen.",
-    foot: "Blocked records are the number that matters. Nothing downstream moves until the fields " +
-          "in the right-hand column are supplied by the named owner."
+    note: "Programme lead view. Everything, including the review queue and archetype coverage.",
+    foot: "Blocked records are the number that matters. Nothing moves until the fields named against " +
+          "each record are supplied by its owner."
   },
   sponsor: {
     note: "Client view. Progress on your programme and what is outstanding with your people. " +
-          "Our internal delivery metrics are not shown here.",
+          "Our internal delivery figures are not shown here.",
     foot: "Outstanding items sit with named roles in your organisation. In the product each opens " +
           "the record and the passage it came from."
   },
@@ -303,98 +449,59 @@ const fig = (n,l,s,warn) =>
     s?`<div class="s">${s}</div>`:""}</div>`;
 
 function headline(lens){
-  const pct = Math.round(totals.ready/totals.records*100);
-  if(lens==="steering") return `<section>
-    <div class="figures">
-      ${fig(`${totals.done} of ${WORKSHOPS.length}`,"workshops held",
-            `week ${PROGRAMME.weeksElapsed} of ${PROGRAMME.weeksPlanned}`)}
-      ${fig(totals.records,"records captured","typed, evidenced, analyst-reviewed")}
-      ${fig(`${pct}%`,"complete enough to sign off",`${totals.blocked} still blocked`,pct<70)}
-      ${fig(STEERING_DECISIONS.length,"decisions needed from this committee","see below",true)}
-    </div></section>`;
-  if(lens==="sponsor") return `<section>
-    <div class="figures">
-      ${fig(`${totals.done} of ${WORKSHOPS.length}`,"workshops held",
-            `next: ${WORKSHOPS.find(w=>w.state==="scheduled").date}`)}
-      ${fig(totals.records,"requirements and decisions captured","from your sessions")}
-      ${fig(totals.clientBlocked,"items awaiting your people","by role, below",true)}
-      ${fig(Math.max(...BY_OWNER.map(o=>o.oldestDays)),"days, oldest outstanding item","with one role",true)}
-    </div></section>`;
-  return `<section>
-    <div class="figures">
-      ${fig(`${totals.done}/${WORKSHOPS.length}`,"workshops processed",
-            `week ${PROGRAMME.weeksElapsed} of ${PROGRAMME.weeksPlanned}`)}
-      ${fig(totals.records,"records","ready "+totals.ready+" · blocked "+totals.blocked)}
-      ${fig(totals.queue,"in the analyst review queue","unreviewed extractions",totals.queue>20)}
-      ${fig(totals.gaps,"archetypes with no workshop",`of ${PROGRAMME.archetypes}`,totals.gaps>0)}
-    </div></section>`;
+  const pct = Math.round(T.ready/T.records*100);
+  if(lens==="steering") return `<section><div class="figures">
+    ${fig(`${T.workshopsDone} of ${T.workshopsTotal}`,"workshops held",`week ${PROGRAMME.weeksElapsed} of ${PROGRAMME.weeksPlanned}`)}
+    ${fig(T.records,"records captured","typed, evidenced, analyst-reviewed")}
+    ${fig(`${pct}%`,"complete enough to sign off",`${T.blocked} still blocked`,pct<70)}
+    ${fig(T.openQuestions,"questions unanswered","each blocking design work",true)}
+  </div></section>`;
+  if(lens==="sponsor") return `<section><div class="figures">
+    ${fig(`${T.workshopsDone} of ${T.workshopsTotal}`,"workshops held",`next: ${WS.find(w=>w.state==="scheduled").date}`)}
+    ${fig(T.records,"records captured","from your sessions")}
+    ${fig(T.clientBlocked,"items awaiting your people","by role, below",true)}
+    ${fig(T.oldestDays,"days, oldest outstanding item","with one role",true)}
+  </div></section>`;
+  return `<section><div class="figures">
+    ${fig(`${T.workshopsDone}/${T.workshopsTotal}`,"workshops processed",`week ${PROGRAMME.weeksElapsed} of ${PROGRAMME.weeksPlanned}`)}
+    ${fig(T.records,"records",`ready ${T.ready} · blocked ${T.blocked}`)}
+    ${fig(T.queue,"in the review queue","not counted above",T.queue>10)}
+    ${fig(T.gaps,"archetypes with no workshop",`of ${COV.length}`,T.gaps>0)}
+  </div></section>`;
 }
 
-const decisions = () => `<section>
-  <h2>Decisions needed from steering</h2>
-  <p class="lead">Each of these is blocking design work and cannot be settled by the programme
-  team. They are shown with what they block, not only what they are.</p>
-  ${STEERING_DECISIONS.map(([id,title,body,impact,owner,age])=>`
-    <div class="item">
-      <div class="id mono">${id}</div>
-      <h3>${esc(title)}</h3>
-      <p>${esc(body)}</p>
-      <div class="impact"><strong>Blocks:</strong> ${esc(impact)}</div>
-      <div class="meta">Sits with ${esc(owner)} · ${esc(age)}</div>
-    </div>`).join("")}
-</section>`;
-
-const risks = () => `<section>
-  <h2>Risks</h2>
-  ${RISKS.map(([id,title,sev,body,owner])=>`
-    <div class="item">
-      <div class="id mono">${id} <span class="sev ${sev}">${sev}</span></div>
-      <h3>${esc(title)}</h3>
-      <p>${esc(body)}</p>
-      <div class="meta">Owner: ${esc(owner)}</div>
-    </div>`).join("")}
-</section>`;
-
-function kinds(){
-  return `<section><h2>Records by kind</h2>
+const kinds = () => `<section><h2>Records by kind</h2>
   <p class="lead">A record is ready when every field its kind requires has been supplied. Most
-  blockers are fields nobody stated in the session — they are supplied by a reviewer, not inferred.</p>
+  blockers are fields nobody stated in the session; a reviewer supplies them, they are never inferred.</p>
   <div class="scroll"><table><thead><tr><th>Kind</th><th class="num">Total</th><th class="num">Ready</th>
-    <th class="num">Blocked</th><th style="width:150px"></th><th>Typically waiting on</th></tr></thead>
-  <tbody>${BY_KIND.map(k=>`<tr>
-    <td>${k.kind}</td><td class="num">${k.total}</td>
+    <th class="num">Blocked</th><th style="width:150px"></th><th>Waiting on</th></tr></thead>
+  <tbody>${KINDS.map(k=>`<tr><td>${k.kind}</td><td class="num">${k.total}</td>
     <td class="num ok">${k.ready}</td><td class="num ${k.blocked?"bad":""}">${k.blocked}</td>
     <td><span class="bar2"><i class="r" style="width:${k.ready/k.total*100}%"></i>
         <i class="b" style="width:${k.blocked/k.total*100}%"></i></span></td>
     <td style="font-size:13px;color:var(--mute)">${esc(k.blockers)}</td></tr>`).join("")}
   </tbody></table></div></section>`;
-}
 
 function owners(lens){
-  /* The sponsor figure counts their own people. Unassigned records are nobody's
-     yet, so they are shown separately rather than folded into that number. */
-  const rows = lens==="sponsor" ? BY_OWNER.filter(o=>o.side==="client") : BY_OWNER;
+  const rows = lens==="sponsor" ? OWNERS.filter(o=>o.side==="client") : OWNERS;
   return `<section><h2>${lens==="sponsor"?"Outstanding with your people":"Blocked records by owner"}</h2>
   <p class="lead">${lens==="sponsor"
-    ? "Each item needs a field supplied, a question answered or an approval given. Nothing moves until it is."
-    : "The number that runs a programme. Age is the oldest outstanding item for that role."}</p>
+    ? "Each needs a field supplied, a question answered or an approval given."
+    : "Age is the oldest outstanding item for that role."}</p>
   <div class="scroll"><table><thead><tr><th>Role</th>${lens!=="sponsor"?"<th>Side</th>":""}
     <th class="num">Blocked</th><th class="num">Oldest</th><th>Subjects</th></tr></thead>
-  <tbody>${rows.map(o=>{ const has=(BLOCKED_BY_OWNER[o.role]||[]).length; return `<tr>
-    <td>${has
-      ? `<button class="rolebtn" data-role="${esc(o.role)}" aria-expanded="${ACTION.role===o.role}"
-          aria-controls="action">${esc(o.role)}</button>
-         <span class="sub">prepare an instruction</span>`
-      : esc(o.role)}</td>
+  <tbody>${rows.map(o=>`<tr>
+    <td><button class="rolebtn" data-role="${esc(o.role)}" aria-controls="action">${esc(o.role)}</button>
+        <span class="sub">prepare an instruction</span></td>
     ${lens!=="sponsor"?`<td style="font-size:13px;color:var(--mute)">${o.side}</td>`:""}
-    <td class="num ${o.count>15?"bad":""}">${o.count}</td>
+    <td class="num ${o.count>8?"bad":""}">${o.count}</td>
     <td class="num ${o.oldestDays>30?"bad":""}">${o.oldestDays}d</td>
-    <td style="font-size:13px;color:var(--body)">${esc(o.topics)}</td></tr>`;}).join("")}
+    <td style="font-size:13px;color:var(--body)">${esc(o.subjects)}</td></tr>`).join("")}
   </tbody></table></div>
-  ${totals.unassigned?`<p class="lead" style="margin-top:12px">
-    <span class="bad">${totals.unassigned} records have no owner at all</span>, so they are not counted
-    against any role above. Nobody was named in the session and no reviewer has assigned one. They are
-    invisible to everyone until someone is.</p>`:""}
+  ${T.unassigned?`<p class="lead" style="margin-top:12px">
+    <span class="bad">${T.unassigned} records have no owner at all</span>${lens==="sponsor"
+      ?", so they are not counted against any role above":""}. Nobody was named in the session and no
+    reviewer has assigned one. They are invisible to everyone until someone is.</p>`:""}
   </section>`;
 }
 
@@ -402,183 +509,150 @@ const workshops = lens => `<section><h2>Workshops</h2>
   <div class="scroll"><table><thead><tr><th>Ref</th><th>Subject</th><th>Region</th><th>Date</th>
     <th class="num">Records</th>${lens!=="sponsor"?'<th class="num">Open questions</th>':""}
     <th>Status</th></tr></thead>
-  <tbody>${WORKSHOPS.map(w=>`<tr>
-    <td class="mono" style="font-size:12.5px">${w.id}</td>
-    <td>${esc(w.title)}</td>
+  <tbody>${WS.map(w=>`<tr>
+    <td class="mono" style="font-size:12.5px">${w.id}</td><td>${esc(w.title)}</td>
     <td style="font-size:13px;color:var(--mute)">${w.region}</td>
     <td class="mono" style="font-size:12.5px">${w.date}</td>
     <td class="num">${w.records||"—"}</td>
-    ${lens!=="sponsor"?`<td class="num ${w.contradictions?"warnx":""}">${w.contradictions||"—"}</td>`:""}
+    ${lens!=="sponsor"?`<td class="num ${w.questions?"warnx":""}">${w.questions||"—"}</td>`:""}
     <td style="font-size:13px" class="${w.state==="done"?"ok":""}">${w.state}</td></tr>`).join("")}
-  </tbody></table></div></section>`;
+  </tbody></table></div>
+  <p class="lead" style="margin-top:10px">Records shown are analyst-reviewed. ${T.queue} further
+  ${T.queue===1?"candidate is":"candidates are"} in the review queue and counted nowhere above.</p>
+  </section>`;
 
 const archetypes = () => `<section><h2>Entity archetype coverage</h2>
-  <p class="lead">${PROGRAMME.entities} entities reduced to ${PROGRAMME.archetypes} patterns. A gap
-  means no workshop has covered how those entities are treated — the design has nothing to say about
-  them yet.</p>
-  <div class="scroll"><table><thead><tr><th>Archetype</th><th class="num">Entities</th><th>Coverage</th>
-    <th>Evidence</th></tr></thead>
-  <tbody>${ARCHETYPES.map(([name,n,status,note])=>`<tr>
-    <td>${esc(name)}</td><td class="num">${n}</td>
-    <td><span class="pill ${status==="covered"?"":status}">${status}</span></td>
-    <td style="font-size:13px;color:var(--mute)">${esc(note)}</td></tr>`).join("")}
+  <p class="lead">${PROGRAMME.entities} entities reduced to ${COV.length} patterns. A gap means no
+  workshop has covered how those entities are treated.</p>
+  <div class="scroll"><table><thead><tr><th>Archetype</th><th class="num">Entities</th>
+    <th>Coverage</th><th>Evidence</th></tr></thead>
+  <tbody>${COV.map(c=>`<tr><td>${esc(c.name)}</td><td class="num">${c.entities}</td>
+    <td><span class="pill ${c.status==="covered"?"":c.status}">${c.status}</span></td>
+    <td style="font-size:13px;color:var(--mute)">${esc(c.note)}</td></tr>`).join("")}
   </tbody></table></div></section>`;
 
-const queue = () => `<section><h2>Analyst review queue</h2>
-  <p class="lead">Extractions waiting on a human to accept, edit or reject. A queue that stops
-  clearing is the first sign a programme is slipping, and it shows here before it shows anywhere else.</p>
+const queue = () => `<section><h2>Review queue</h2>
+  <p class="lead">Extractions waiting on a human to accept, edit or reject. Nothing here counts
+  towards any figure above until it has been reviewed.</p>
   <div class="scroll"><table><thead><tr><th>Analyst</th><th class="num">Waiting</th><th>Position</th></tr></thead>
-  <tbody>${ANALYST_QUEUE.map(([who,n,note])=>`<tr>
-    <td>${esc(who)}</td><td class="num ${n>15?"bad":n?"":"ok"}">${n||"—"}</td>
+  <tbody>${ANALYST_QUEUE.map(([who,n,note])=>`<tr><td>${esc(who)}</td>
+    <td class="num ${n>10?"bad":n?"":"ok"}">${n||"—"}</td>
     <td style="font-size:13px;color:var(--body)">${esc(note)}</td></tr>`).join("")}
   </tbody></table></div></section>`;
 
-/* ------- prepare an instruction for one owner -------
-   A static page cannot send anything. What it can do is prepare the two things
-   that do work: a prefilled Outlook draft, and the instruction the analyst
-   pastes into ARQON to have the register draft it properly. */
-
+/* ---- prepare an instruction ---- */
 let ACTION = { role: null };
-const NOTES = {};                       // one note per role; they are not interchangeable
-const noteFor = (role) => NOTES[role] || "";
-const EMAIL_OF = {
-  "Accounting policy lead": "policy.lead@northbridge.example",
-  "Group consolidation lead": "consolidation.lead@northbridge.example",
-  "Programme data architect": "data.architect@diintl.com",
-  "Regional finance lead, APAC": "apac.finance@northbridge.example",
-  "Regional finance lead, EMEA": "emea.finance@northbridge.example",
-  "Finance control and audit": "control@northbridge.example",
-};
+const NOTES = {};
+const noteFor = r => NOTES[r] || "";
 
 function mailBody(role, recs, note){
-  const lines = [
-    `${role},`, "",
-    note.trim() ? note.trim() : "The records below are outstanding with you.",
-    "",
-    ...recs.flatMap(([id,kind,text,blockers]) => [
-      `${id}  (${kind})`,
-      `   ${text}`,
-      `   outstanding: ${blockers}`,
-      ""]),
-    `From the ${PROGRAMME.client} ${PROGRAMME.name} register (${PROGRAMME.ref}).`,
-  ];
-  return lines.join("\n");
+  return [`${role},`, "",
+    note.trim() || "The records below are outstanding with you.", "",
+    ...recs.flatMap(r => [`${r.id}  (${r.kind})`, `   ${r.statement}`,
+      `   outstanding: ${r.blockers.join(", ")}`, ""]),
+    `From the ${PROGRAMME.client} ${PROGRAMME.name} register (${PROGRAMME.ref}).`].join("\n");
 }
+
+const instructionFor = (role, recs) =>
+  `Draft a notification to the ${role} on ${PROGRAMME.ref} for records `
+  + recs.map(r=>r.id).join(", ")
+  + (noteFor(role).trim() ? `.\nContext for you when you review the draft: ${noteFor(role).trim()}` : ".");
 
 function actionPanel(){
   const role = ACTION.role;
   if(!role) return "";
-  const recs = BLOCKED_BY_OWNER[role] || [];
-  const owner = BY_OWNER.find(o=>o.role===role);
-  const to = EMAIL_OF[role] || "";
+  const recs = blockedFor(role), o = OWNERS.find(x=>x.role===role);
+  const to = o?.email || "";
   const subject = `${PROGRAMME.client}: ${recs.length} record${recs.length===1?"":"s"} outstanding with you`;
   const href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}`
              + `&body=${encodeURIComponent(mailBody(role, recs, noteFor(role)))}`;
-  const instruction =
-    `Draft a notification to the ${role} on ${PROGRAMME.ref} for records `
-    + recs.map(r=>r[0]).join(", ")
-    + (noteFor(role).trim() ? `.\nContext for you when you review the draft: ${noteFor(role).trim()}` : ".");
-
   return `<section id="action">
     <h2>Prepare an instruction — ${esc(role)}</h2>
-    <p class="lead">${owner ? `${owner.count} blocked, oldest ${owner.oldestDays} days.` : ""}
-    Nothing is sent from this page. It prepares the two things that work: a draft in your own
-    Outlook, or an instruction for ARQON to draft it from the register with evidence attached.</p>
-
-    ${recs.length ? `<div class="scroll"><table><thead><tr><th>Record</th><th>Kind</th><th>Statement</th>
-      <th>Outstanding</th></tr></thead><tbody>
-      ${recs.map(([id,kind,text,bl])=>`<tr><td class="mono" style="font-size:12.5px">${id}</td>
-        <td style="font-size:13px;color:var(--mute)">${kind}</td><td>${esc(text)}</td>
-        <td style="font-size:13px" class="warnx">${esc(bl)}</td></tr>`).join("")}
-      </tbody></table></div>`
-     : `<p class="lead">No records are listed against this role.</p>`}
-
+    <p class="lead">${o?`${o.count} blocked, oldest ${o.oldestDays} days.`:""}
+    Nothing is sent from this page. It prepares two things: a message in your own mail application,
+    or an instruction for ARQON to draft from the register with evidence attached.</p>
+    ${recs.length?`<div class="scroll"><table><thead><tr><th>Record</th><th>Kind</th>
+      <th>Statement</th><th>Outstanding</th><th>Evidence</th></tr></thead><tbody>
+      ${recs.map(r=>`<tr><td class="mono" style="font-size:12.5px">${r.id}</td>
+        <td style="font-size:13px;color:var(--mute)">${r.kind}</td><td>${esc(r.statement)}</td>
+        <td style="font-size:13px" class="warnx">${esc(r.blockers.join(", "))}</td>
+        <td class="mono" style="font-size:12px;color:var(--faint)">${r.workshop} ${r.passages.join(", ")}</td>
+        </tr>`).join("")}</tbody></table></div>`
+     : `<p class="lead">No blocked records against this role.</p>`}
     <div class="compose">
-      <label for="note">Your instruction — optional. Included verbatim in the email app message;
-      passed to the analyst as context for the ARQON route.</label>
-      <textarea id="note" placeholder="e.g. We need these before the design review on the 14th. The tolerance question is blocking the intercompany build.">${esc(noteFor(role))}</textarea>
+      <label for="note">Your instruction — optional. Included verbatim in the mail message; passed to
+      the analyst as context for the ARQON route.</label>
+      <textarea id="note" placeholder="e.g. We need these before the design review on the 14th.">${esc(noteFor(role))}</textarea>
       <div class="acts">
         <a class="btn" href="${href}">Open in email app</a>
         <button class="btn ghost" data-copy="1">Copy instruction for ARQON</button>
         <button class="link" data-close="1">Close</button>
       </div>
-      <pre class="inst" id="inst">${esc(instruction)}</pre>
+      <pre class="inst" id="inst">${esc(instructionFor(role, recs))}</pre>
       <p class="caveat"><strong>What each does.</strong> “Open in email app” hands the text to
-      whatever mail application this machine is set to use. It composes a message; it creates no
-      draft here and logs nothing. Your note is included in it verbatim.<br><br>
-      The ARQON instruction is for the analyst to paste into the register. The draft it produces
-      uses a fixed server-side template and cites the workshop passage behind every record — which
-      is why <strong>your note is carried as context for the analyst, not inserted into that
-      email</strong>. The template wording is not something a note can change. Both leave the
-      sending to a person.</p>
-    </div>
-  </section>`;
-}
-
-function render(lens){
-  document.getElementById("client").textContent = `${PROGRAMME.client} · ${PROGRAMME.name}`;
-  document.getElementById("ref").textContent = `${PROGRAMME.ref} · ${PROGRAMME.phase} phase`;
-  document.querySelectorAll(".lens button").forEach(b=>
-    b.classList.toggle("on", b.dataset.lens===lens));
-  const parts = [`<p class="lensnote">${LENS[lens].note}</p>`, headline(lens)];
-  if(lens==="steering") parts.push(decisions(), risks(), kinds(), workshops(lens));
-  if(lens==="sponsor")  parts.push(decisions(), owners(lens), actionPanel(), workshops(lens));
-  if(lens==="lead")     parts.push(queue(), owners(lens), actionPanel(), kinds(), archetypes(),
-                                   workshops(lens), decisions(), risks());
-  document.getElementById("main").innerHTML = parts.join("");
-  document.getElementById("foot").textContent = LENS[lens].foot;
+      whatever mail application this machine is set to use. It composes a message; it creates no draft
+      here and logs nothing. Your note is included verbatim.<br><br>
+      The ARQON instruction is for the analyst to paste into the register. The draft it produces uses
+      a fixed server-side template and cites the workshop passage behind every record — which is why
+      <strong>your note is carried as context for the analyst, not inserted into that email</strong>.
+      Both leave the sending to a person.</p>
+    </div></section>`;
 }
 
 let CURRENT = "lead";
 
+function render(lens){
+  document.getElementById("client").textContent = `${PROGRAMME.client} · ${PROGRAMME.name}`;
+  document.getElementById("ref").textContent = `${PROGRAMME.ref} · ${PROGRAMME.phase} phase`;
+  document.querySelectorAll(".lens button").forEach(b=>b.classList.toggle("on", b.dataset.lens===lens));
+  const parts = [`<p class="lensnote">${LENS[lens].note}</p>`, headline(lens)];
+  if(lens==="steering") parts.push(kinds(), owners(lens), actionPanel(), workshops(lens));
+  if(lens==="sponsor")  parts.push(owners(lens), actionPanel(), workshops(lens));
+  if(lens==="lead")     parts.push(queue(), owners(lens), actionPanel(), kinds(), archetypes(), workshops(lens));
+  if(!T.reconciled)
+    parts.push(`<p class="lensnote" style="border-color:#9f1239;background:#fff1f2;color:#881337">
+      Figures on this page do not reconcile to the underlying records. Do not rely on them.</p>`);
+  document.getElementById("main").innerHTML = parts.join("");
+  document.getElementById("foot").textContent = LENS[lens].foot;
+}
+
 document.addEventListener("click", e=>{
   const lensBtn = e.target.closest("[data-lens]");
   if(lensBtn){ CURRENT = lensBtn.dataset.lens; ACTION = {role:null}; render(CURRENT); return; }
-
   if(e.target.closest("[data-close]")){ ACTION = {role:null}; render(CURRENT); return; }
-
   if(e.target.closest("[data-copy]")){
     const text = document.getElementById("inst").textContent;
     navigator.clipboard?.writeText(text).then(
-      ()=>{ e.target.textContent = "Copied"; setTimeout(()=>{ e.target.textContent =
-             "Copy instruction for ARQON"; }, 1600); },
-      ()=>{ const r = document.createRange(); r.selectNodeContents(document.getElementById("inst"));
-            getSelection().removeAllRanges(); getSelection().addRange(r); });
+      ()=>{ e.target.textContent="Copied"; setTimeout(()=>{e.target.textContent="Copy instruction for ARQON";},1600); },
+      ()=>{});
     return;
   }
-
   const roleBtn = e.target.closest("button[data-role]");
   if(roleBtn){
     ACTION = { role: roleBtn.dataset.role };
     render(CURRENT);
-    const panel = document.getElementById("action");
-    panel?.scrollIntoView({behavior:"smooth",block:"start"});
+    document.getElementById("action")?.scrollIntoView({behavior:"smooth",block:"start"});
     document.getElementById("note")?.focus();
   }
 });
 
-/* Keep the note as it is typed, and refresh the prepared outputs without
-   re-rendering the field out from under the cursor. */
 document.addEventListener("input", e=>{
-  if(e.target.id !== "note") return;
+  if(e.target.id!=="note") return;
   NOTES[ACTION.role] = e.target.value;
-  const note = noteFor(ACTION.role);
-  const recs = BLOCKED_BY_OWNER[ACTION.role] || [];
+  const recs = blockedFor(ACTION.role);
   const inst = document.getElementById("inst");
-  if(inst) inst.textContent =
-    `Draft a notification to the ${ACTION.role} on ${PROGRAMME.ref} for records `
-    + recs.map(r=>r[0]).join(", ")
-    + (noteFor(role).trim() ? `.\nContext for you when you review the draft: ${noteFor(role).trim()}` : ".");
+  if(inst) inst.textContent = instructionFor(ACTION.role, recs);
   const link = document.querySelector("#action a.btn");
   if(link){
-    const to = EMAIL_OF[ACTION.role] || "";
+    const o = OWNERS.find(x=>x.role===ACTION.role);
     const subject = `${PROGRAMME.client}: ${recs.length} record${recs.length===1?"":"s"} outstanding with you`;
-    link.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}`
-              + `&body=${encodeURIComponent(mailBody(ACTION.role, recs, note))}`;
+    link.href = `mailto:${encodeURIComponent(o?.email||"")}?subject=${encodeURIComponent(subject)}`
+              + `&body=${encodeURIComponent(mailBody(ACTION.role, recs, noteFor(ACTION.role)))}`;
   }
 });
 
 render(CURRENT);
+
 </script>
 </body>
 </html>
