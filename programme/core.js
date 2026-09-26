@@ -39,7 +39,7 @@ function splitCsv(line){
     else cur += c;
   }
   out.push(cur.trim());
-  return out;
+  return { fields: out, unclosedQuote: inQuotes };
 }
 
 /* roster: [{name, designation}] */
@@ -49,12 +49,25 @@ export function parseRoster(text){
   const seen = new Map();
   for (const [i, line] of lines.entries()){
     if (i === 0 && /^name\s*,/i.test(line)) continue;           // header
-    const parts = splitCsv(line);
-    if (parts.length < 2 || !parts[0] || !parts[1]){
+    const { fields, unclosedQuote } = splitCsv(line);
+    if (unclosedQuote){
+      errors.push(`Line ${i + 1}: unclosed quote — "${line.slice(0, 48)}"`);
+      continue;
+    }
+    if (fields.length < 2 || !fields[0] || !fields[1]){
       errors.push(`Line ${i + 1}: expected "name, designation" — got "${line.slice(0, 48)}"`);
       continue;
     }
-    const [name, designation] = parts;
+    /* A designation containing a comma must be quoted. Taking the first two
+       fields and discarding the rest turns "Regional finance lead, EMEA" into
+       "Regional finance lead" with nothing said — the kind of loss nobody
+       notices until a record is routed to the wrong region. */
+    if (fields.length > 2 && fields.slice(2).some(f => f !== "")){
+      errors.push(`Line ${i + 1}: ${fields.length} fields. If the designation contains a comma, ` +
+                  `quote it: ${fields[0]}, "${fields.slice(1).join(", ")}"`);
+      continue;
+    }
+    const [name, designation] = fields;
     const k = name.toLowerCase();
     if (seen.has(k) && seen.get(k).toLowerCase() !== designation.toLowerCase()){
       errors.push(`"${name}" is listed twice with different designations: ` +
@@ -123,6 +136,11 @@ function nearMatches(label, roster){
   }).slice(0, 3);
 }
 
+/* A passage ID is unique within a document, not across documents: two
+   transcripts both have a P-001. Anything citing a passage — a record, a
+   finding, an email — must use the document-scoped ref below. */
+export const passageRef = (fingerprint, id) => `${fingerprint}/${id}`;
+
 export function structure(text, { roster = [], filename = "transcript.txt", workshop = "" } = {}){
   const fp = fingerprint(text);
   const lines = text.split(/\r?\n/);
@@ -136,13 +154,13 @@ export function structure(text, { roster = [], filename = "transcript.txt", work
     const id = `P-${String(n).padStart(3, "0")}`;
     const m = TURN.exec(line);
     if (!m){
-      passages.push({ id, sourceLine: i + 1, time: "", speaker: null, text: line,
-                      parse: "unparsed", why: "did not match [time] Speaker: text" });
+      passages.push({ id, ref: passageRef(fp, id), sourceLine: i + 1, time: "", speaker: null,
+                      text: line, parse: "unparsed", why: "did not match [time] Speaker: text" });
       continue;
     }
     const sp = resolve(m[2], roster);
-    passages.push({ id, sourceLine: i + 1, time: m[1] || "", speaker: sp,
-                    text: m[3].trim(), parse: "ok" });
+    passages.push({ id, ref: passageRef(fp, id), sourceLine: i + 1, time: m[1] || "",
+                    speaker: sp, text: m[3].trim(), parse: "ok" });
   }
 
   /* A later turn casting doubt marks the nearby speaker uncertain. Never resolves it. */

@@ -18,7 +18,7 @@ Hui Lim, "Regional finance lead, APAC"
 Dele Ahmed, Group controller
 Sade Okonjo, Accounting policy lead`;
 
-let transcriptText = "", structured = null;
+let transcriptText = "", structured = null, rosterErrors = [], stale = false;
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c =>
@@ -53,15 +53,36 @@ $("sample").addEventListener("click", () => {
 });
 $("rsample").addEventListener("click", () => { $("roster").value = SAMPLE_ROSTER; });
 
+function showRosterErrors(){
+  $("rerr").innerHTML = rosterErrors.length
+    ? `<div class="err"><strong>${rosterErrors.some(e=>/listed twice/.test(e))
+        ? "Roster rejected — nothing was structured."
+        : "Rows skipped. Speakers in them will not resolve."}</strong><br>${
+        rosterErrors.map(esc).join("<br>")}</div>`
+    : "";
+}
+
+/* Editing the roster or the reference makes an existing result wrong: it would
+   export the assignments from before the edit. Withhold the export until it is
+   rebuilt. */
+function markStale(){
+  if (!structured || stale) return;
+  stale = true;
+  const s = $("stale"); if (s) s.className = "err";
+  ["dl","cp"].forEach(id => { const b = $(id); if (b) b.disabled = true; });
+}
+$("roster").addEventListener("input", markStale);
+$("wref").addEventListener("input", markStale);
+
 $("go").addEventListener("click", () => {
   const { roster, errors } = parseRoster($("roster").value || "");
-  $("rerr").innerHTML = errors.length
-    ? `<div class="err"><strong>Roster not used as given.</strong><br>${errors.map(esc).join("<br>")}</div>`
-    : "";
+  rosterErrors = errors;
+  showRosterErrors();
   /* A roster that contradicts itself is worse than none: it would resolve a
      speaker cleanly and wrongly. */
   if (errors.some(e => /listed twice/.test(e))) return;
 
+  stale = false;
   structured = structure(transcriptText, {
     roster,
     filename: $("tfile").dataset.name || "pasted.txt",
@@ -89,9 +110,10 @@ function renderResult(){
       passage IDs, so a record can cite one and still resolve later.</p>
     <div class="figures">
       <div class="fig"><div class="n">${s.passages.length}</div><div class="l">passages</div></div>
-      <div class="fig"><div class="n">${confirmed}</div><div class="l">speakers confirmed</div></div>
+      <div class="fig"><div class="n">${confirmed}</div>
+        <div class="l">passages with a confirmed speaker</div></div>
       <div class="fig${s.passages.length - confirmed ? " warn" : ""}">
-        <div class="n">${s.passages.length - confirmed}</div><div class="l">passages without a confirmed speaker</div></div>
+        <div class="n">${s.passages.length - confirmed}</div><div class="l">passages without one</div></div>
       <div class="fig${s.issues.length ? " warn" : ""}"><div class="n">${s.issues.length}</div>
         <div class="l">items for review</div></div>
     </div>
@@ -131,9 +153,13 @@ function renderResult(){
   <section>
     <h2>${s.issues.length ? "5" : "4"} · Export</h2>
     <p class="lead">Versioned JSON (<span class="mono">${esc(s.schema)}</span>) carrying source
-      metadata, passages, speaker resolution and everything unresolved. This is the input to
-      classification — which runs elsewhere, produces records, and puts them in an analyst's queue
+      metadata, passages, speaker resolution and everything unresolved. Passage IDs are unique
+      within this document only, so every passage also carries
+      <span class="mono">${esc(s.source.fingerprint)}/P-00n</span> for anything that cites it.
+      This is the input to classification — which runs elsewhere, produces records, and puts them in an analyst's queue
       before they count towards anything.</p>
+    <div id="stale" class="hide">The roster or workshop reference changed after this was
+      structured. Export is withheld — press “Structure the transcript” again.</div>
     <div class="row">
       <button class="btn" id="dl">Download JSON</button>
       <button class="btn ghost" id="copy">Copy JSON</button>

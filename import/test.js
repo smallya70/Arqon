@@ -71,6 +71,27 @@ t("a different first initial is not suggested",
   (wrongInitial.passages[0].speaker.suggestions || []).length === 0,
   JSON.stringify(wrongInitial.passages[0].speaker.suggestions));
 
+console.log("\nmalformed rosters are rejected, not truncated");
+const mal = parseRoster('name, designation\nAlice, Regional finance lead, EMEA\nBob, "Unclosed\nCarol, "Regional finance lead, APAC"');
+t("unquoted comma rejected", mal.errors.some(e => /3 fields/.test(e)), mal.errors.join(" | "));
+t("the fix is shown", mal.errors.some(e => /quote it: Alice/.test(e)));
+t("unclosed quote rejected", mal.errors.some(e => /unclosed quote/i.test(e)));
+t("no truncated designation accepted",
+  !mal.roster.some(r => r.designation === "Regional finance lead"),
+  JSON.stringify(mal.roster));
+t("the valid quoted row survives",
+  mal.roster.some(r => r.designation === "Regional finance lead, APAC"));
+
+console.log("\ndocument-scoped passage references");
+const d1 = structure("[09:00] Maria Torres: one", { roster, filename: "a.txt" });
+const d2 = structure("[09:00] Maria Torres: two", { roster, filename: "b.txt" });
+t("ids collide across documents", d1.passages[0].id === d2.passages[0].id);
+t("refs do not", d1.passages[0].ref !== d2.passages[0].ref,
+  `${d1.passages[0].ref} vs ${d2.passages[0].ref}`);
+t("ref is fingerprint/id",
+  d1.passages[0].ref === d1.source.fingerprint + "/" + d1.passages[0].id);
+t("every passage carries a ref", d1.passages.every(p => p.ref));
+
 console.log("\nrepeatability");
 const s2 = structure(TXT, { roster, filename: "t.txt", workshop: "W-049" });
 t("same fingerprint", s.source.fingerprint === s2.source.fingerprint);

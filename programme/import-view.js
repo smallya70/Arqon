@@ -29,7 +29,13 @@ Sade Okonjo, Accounting policy lead`;
 const rosterFromProgramme = () =>
   "name, designation\n" + ROLES.map(r => `Name of ${r.role}, "${r.role}"`).join("\n");
 
-let IMP = { text: "", filename: "", structured: null, rosterText: "", workshop: "" };
+let IMP = { text: "", filename: "", structured: null, rosterText: "", workshop: "",
+            rosterErrors: [], stale: false };
+
+/* Changing the roster or the workshop reference makes an existing result wrong:
+   it would export the speaker assignments and reference from before the edit.
+   The result is marked stale and the export is withheld until it is rebuilt. */
+function invalidate(){ if (IMP.structured) IMP.stale = true; }
 
 function importView(){
   const s = IMP.structured;
@@ -67,7 +73,11 @@ function importView(){
       <span id="istatus" style="font-size:13px;color:var(--mute)">${
         IMP.text.trim() ? `${IMP.text.split(/\r?\n/).filter(l=>l.trim()).length} non-empty lines loaded` : ""}</span>
     </div>
-    <div id="rerr"></div>
+    <div id="rerr">${IMP.rosterErrors.length ? `<div class="err">
+      <strong>${IMP.rosterErrors.some(e=>/listed twice/.test(e))
+        ? "Roster rejected — nothing was structured."
+        : "Rows skipped. Speakers in them will not resolve."}</strong><br>${
+        IMP.rosterErrors.map(esc).join("<br>")}</div>` : ""}</div>
   </section>
   ${s ? resultView(s) : ""}`;
 }
@@ -79,14 +89,20 @@ function resultView(s){
   const confirmed = counts.confirmed || 0;
   return `
   <section><h2>2 · Structure</h2>
-    <p class="lead">Transcript prepared for extraction. Passage IDs come from position and the file's
-      content fingerprint, so the same file always yields the same IDs — a record can cite one and
-      still resolve months later.</p>
+    <p class="lead">Transcript prepared for extraction. Passage IDs come from position, so the same
+      file always yields the same IDs. They are unique within this document only — two transcripts
+      both have a <span class="mono">P-001</span> — so anything citing a passage uses the
+      document-scoped reference <span class="mono">${esc(s.source.fingerprint)}/P-001</span>, which
+      is carried on every passage in the export.</p>
     <div class="figures">
       <div class="fig"><div class="n">${s.passages.length}</div><div class="l">passages</div></div>
-      <div class="fig"><div class="n">${confirmed}</div><div class="l">speakers confirmed</div></div>
+      <div class="fig"><div class="n">${confirmed}</div>
+        <div class="l">passages with a confirmed speaker</div></div>
       <div class="fig${s.passages.length-confirmed?" warn":""}"><div class="n">${s.passages.length-confirmed}</div>
-        <div class="l">passages without a confirmed speaker</div></div>
+        <div class="l">passages without one</div></div>
+      <div class="fig"><div class="n">${s.speakers.filter(x=>x.certainty==="confirmed").length}
+        <span style="font-size:15px;color:var(--faint)"> of ${s.speakers.length}</span></div>
+        <div class="l">distinct speakers confirmed</div></div>
       <div class="fig${s.issues.length?" warn":""}"><div class="n">${s.issues.length}</div>
         <div class="l">items for review</div></div>
     </div>
@@ -121,9 +137,13 @@ function resultView(s){
     <p class="lead">Versioned JSON (<span class="mono">${esc(s.schema)}</span>) with source metadata,
       passages, speaker resolution and everything unresolved. This is the input to classification,
       which runs separately and puts its records in an analyst's queue before they count anywhere.</p>
-    <div class="acts">
-      <button class="btn" id="dl">Download JSON</button>
-      <button class="btn ghost" id="cp">Copy JSON</button>
+    <div id="stale" class="${IMP.stale ? "err" : "hide"}">
+      The roster or workshop reference changed after this was structured. Export is withheld —
+      press “Structure the transcript” again so the result matches what is on screen.
+    </div>
+    <div class="acts" style="margin-top:12px">
+      <button class="btn" id="dl"${IMP.stale ? " disabled" : ""}>Download JSON</button>
+      <button class="btn ghost" id="cp"${IMP.stale ? " disabled" : ""}>Copy JSON</button>
       <span style="font-size:13px;color:var(--mute)">state: ${esc(s.state)} · fingerprint
         <span class="mono">${esc(s.source.fingerprint)}</span></span>
     </div>
@@ -134,6 +154,14 @@ function resultView(s){
 
 function bindImport(){
   const el = (id) => document.getElementById(id);
+  /* Shown without a full redraw, so the roster textarea keeps focus and caret. */
+  const markStale = () => {
+    const w = el("stale");
+    if (w) w.className = "err";
+    const dl = el("dl"), cp = el("cp");
+    if (dl) dl.disabled = true;
+    if (cp) cp.disabled = true;
+  };
   const readFile = (f, then) => { const fr = new FileReader();
     fr.onload = () => then(fr.result, f.name); fr.readAsText(f, "utf-8"); };
 
@@ -152,19 +180,24 @@ function bindImport(){
   });
   el("rsample")?.addEventListener("click", () => { IMP.rosterText = SAMPLE_ROSTER; render(CURRENT); });
   el("rroles")?.addEventListener("click", () => { IMP.rosterText = rosterFromProgramme(); render(CURRENT); });
-  el("roster")?.addEventListener("input", e => { IMP.rosterText = e.target.value; });
-  el("wref")?.addEventListener("input", e => { IMP.workshop = e.target.value; });
+  el("roster")?.addEventListener("input", e => {
+    IMP.rosterText = e.target.value;
+    if (IMP.structured && !IMP.stale){ invalidate(); markStale(); }
+  });
+  el("wref")?.addEventListener("input", e => {
+    IMP.workshop = e.target.value;
+    if (IMP.structured && !IMP.stale){ invalidate(); markStale(); }
+  });
 
   el("go")?.addEventListener("click", () => {
     const { roster, errors } = parseRoster(IMP.rosterText || "");
     IMP.workshop = el("wref").value.trim();
-    if (errors.length && el("rerr"))
-      el("rerr").innerHTML = `<div class="err"><strong>Roster not used as given.</strong><br>${
-        errors.map(esc).join("<br>")}</div>`;
+    IMP.rosterErrors = errors;
     /* A roster contradicting itself would resolve a speaker cleanly and wrongly. */
-    if (errors.some(e => /listed twice/.test(e))) return;
+    if (errors.some(e => /listed twice/.test(e))){ render(CURRENT); return; }
     IMP.structured = structure(IMP.text, { roster, filename: IMP.filename || "pasted.txt",
                                            workshop: IMP.workshop });
+    IMP.stale = false;
     render(CURRENT);
     document.querySelector("#main section:nth-of-type(2)")?.scrollIntoView({behavior:"smooth",block:"start"});
   });
