@@ -354,6 +354,11 @@ const inputSignature = () =>
   fingerprint([transcriptText, $("roster").value || "", $("wref").value || ""].join("\u0000"));
 const isStale = () => !!structured && builtFrom !== inputSignature();
 
+/* Declared once. Naming these as strings in the markup and again in the
+   disabling code let the two drift — the copy button kept its old id and stayed
+   enabled while the download was correctly withheld. */
+const EXPORT_BUTTONS = ["dl", "copy"];
+
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -403,7 +408,7 @@ function showRosterErrors(){
 function markStale(){
   const stale = isStale();
   const s = $("stale"); if (s) s.className = stale ? "err" : "hide";
-  ["dl","cp"].forEach(id => { const b = $(id); if (b) b.disabled = stale; });
+  EXPORT_BUTTONS.forEach(id => { const b = $(id); if (b) b.disabled = stale; });
 }
 /* Every input that the result depends on, including the ones added later. */
 ["roster","wref"].forEach(id => $(id).addEventListener("input", markStale));
@@ -495,15 +500,17 @@ function renderResult(){
     <div id="stale" class="hide">The roster or workshop reference changed after this was
       structured. Export is withheld — press “Structure the transcript” again.</div>
     <div class="row">
-      <button class="btn" id="dl">Download JSON</button>
-      <button class="btn ghost" id="copy">Copy JSON</button>
+      <button class="btn" id="${EXPORT_BUTTONS[0]}">Download JSON</button>
+      <button class="btn ghost" id="${EXPORT_BUTTONS[1]}">Copy JSON</button>
       <span style="font-size:13px;color:var(--mute)">state: ${esc(s.state)}</span>
     </div>
     <pre class="out" style="margin-top:14px">${esc(JSON.stringify(s, null, 2).slice(0, 2600))}${
       JSON.stringify(s).length > 2600 ? "\n… truncated for display; the download is complete" : ""}</pre>
   </section>`;
 
+  markStale();
   $("dl").addEventListener("click", () => {
+    if (isStale()) { markStale(); return; }   // belt as well as braces
     const blob = new Blob([JSON.stringify(structured, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -512,6 +519,7 @@ function renderResult(){
     URL.revokeObjectURL(a.href);
   });
   $("copy").addEventListener("click", (e) => {
+    if (isStale()) { markStale(); return; }
     navigator.clipboard?.writeText(JSON.stringify(structured, null, 2)).then(() => {
       e.target.textContent = "Copied";
       setTimeout(() => { e.target.textContent = "Copy JSON"; }, 1500);

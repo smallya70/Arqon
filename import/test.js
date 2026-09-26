@@ -105,6 +105,29 @@ t("a different workshop ref is stale", sig(TXT, ROSTER, "W-050") !== built);
 t("a different transcript is stale", sig(TXT + "\n[10:00] Maria Torres: more", ROSTER, "W-049") !== built);
 t("whitespace in the roster still counts", sig(TXT, ROSTER + " ", "W-049") !== built);
 
+console.log("\nexport controls are declared once, not named twice");
+/* The bug this catches: the disabling code named "cp" while the markup declared
+   "copy", so one export stayed enabled. A static check, because the failure is
+   a mismatch between two string literals that no behavioural test noticed. */
+import { readFileSync as _rf } from "node:fs";
+for (const [label, file] of [["standalone", "./app.js"],
+                             ["programme view", "../programme/import-view.js"]]){
+  const src = _rf(file, "utf8");
+  const decl = /const EXPORT_BUTTONS = \[([^\]]+)\]/.exec(src);
+  t(`${label}: ids declared once`, !!decl, "EXPORT_BUTTONS not found");
+  if (!decl) continue;
+  const ids = decl[1].split(",").map(s => s.trim().replace(/['"]/g, ""));
+  for (const id of ids)
+    t(`${label}: "${id}" is used in the markup, not hardcoded elsewhere`,
+      !new RegExp(`id="${id}"`).test(src),
+      `markup still hardcodes id="${id}"`);
+  t(`${label}: markup builds buttons from the list`,
+    (src.match(/id="\$\{EXPORT_BUTTONS\[\d\]\}"/g) || []).length === ids.length);
+  t(`${label}: both export handlers check isStale`,
+    (src.match(/if \(isStale\(\)\) \{ markStale\(\); return; \}/g) || []).length >= 2,
+    String((src.match(/if \(isStale\(\)\)/g) || []).length));
+}
+
 console.log("\nrepeatability");
 const s2 = structure(TXT, { roster, filename: "t.txt", workshop: "W-049" });
 t("same fingerprint", s.source.fingerprint === s2.source.fingerprint);
