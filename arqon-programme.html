@@ -684,12 +684,18 @@ const rosterFromProgramme = () =>
   "name, designation\n" + ROLES.map(r => `Name of ${r.role}, "${r.role}"`).join("\n");
 
 let IMP = { text: "", filename: "", structured: null, rosterText: "", workshop: "",
-            rosterErrors: [], stale: false };
+            rosterErrors: [], builtFrom: null };
 
-/* Changing the roster or the workshop reference makes an existing result wrong:
-   it would export the speaker assignments and reference from before the edit.
-   The result is marked stale and the export is withheld until it is rebuilt. */
-function invalidate(){ if (IMP.structured) IMP.stale = true; }
+/* Staleness is derived, not flagged.
+
+   Marking it in each handler meant any path nobody thought of — a roster file,
+   the sample buttons — left an old result downloadable. Instead the inputs the
+   result depends on are fingerprinted when it is built and compared on every
+   render, so a new input path is covered without being remembered. */
+const inputSignature = () =>
+  fingerprint([IMP.text, IMP.rosterText, IMP.workshop].join("\u0000"));
+
+const isStale = () => !!IMP.structured && IMP.builtFrom !== inputSignature();
 
 function importView(){
   const s = IMP.structured;
@@ -791,13 +797,13 @@ function resultView(s){
     <p class="lead">Versioned JSON (<span class="mono">${esc(s.schema)}</span>) with source metadata,
       passages, speaker resolution and everything unresolved. This is the input to classification,
       which runs separately and puts its records in an analyst's queue before they count anywhere.</p>
-    <div id="stale" class="${IMP.stale ? "err" : "hide"}">
+    <div id="stale" class="${isStale() ? "err" : "hide"}">
       The roster or workshop reference changed after this was structured. Export is withheld —
       press “Structure the transcript” again so the result matches what is on screen.
     </div>
     <div class="acts" style="margin-top:12px">
-      <button class="btn" id="dl"${IMP.stale ? " disabled" : ""}>Download JSON</button>
-      <button class="btn ghost" id="cp"${IMP.stale ? " disabled" : ""}>Copy JSON</button>
+      <button class="btn" id="dl"${isStale() ? " disabled" : ""}>Download JSON</button>
+      <button class="btn ghost" id="cp"${isStale() ? " disabled" : ""}>Copy JSON</button>
       <span style="font-size:13px;color:var(--mute)">state: ${esc(s.state)} · fingerprint
         <span class="mono">${esc(s.source.fingerprint)}</span></span>
     </div>
@@ -810,11 +816,9 @@ function bindImport(){
   const el = (id) => document.getElementById(id);
   /* Shown without a full redraw, so the roster textarea keeps focus and caret. */
   const markStale = () => {
-    const w = el("stale");
-    if (w) w.className = "err";
-    const dl = el("dl"), cp = el("cp");
-    if (dl) dl.disabled = true;
-    if (cp) cp.disabled = true;
+    const stale = isStale();
+    const w = el("stale"); if (w) w.className = stale ? "err" : "hide";
+    ["dl","cp"].forEach(id => { const b = el(id); if (b) b.disabled = stale; });
   };
   const readFile = (f, then) => { const fr = new FileReader();
     fr.onload = () => then(fr.result, f.name); fr.readAsText(f, "utf-8"); };
@@ -834,14 +838,10 @@ function bindImport(){
   });
   el("rsample")?.addEventListener("click", () => { IMP.rosterText = SAMPLE_ROSTER; render(CURRENT); });
   el("rroles")?.addEventListener("click", () => { IMP.rosterText = rosterFromProgramme(); render(CURRENT); });
-  el("roster")?.addEventListener("input", e => {
-    IMP.rosterText = e.target.value;
-    if (IMP.structured && !IMP.stale){ invalidate(); markStale(); }
-  });
-  el("wref")?.addEventListener("input", e => {
-    IMP.workshop = e.target.value;
-    if (IMP.structured && !IMP.stale){ invalidate(); markStale(); }
-  });
+  /* Typing does not redraw — that would steal the caret — so the stale state is
+     applied in place. Every other input path redraws and picks it up for free. */
+  el("roster")?.addEventListener("input", e => { IMP.rosterText = e.target.value; markStale(); });
+  el("wref")?.addEventListener("input", e => { IMP.workshop = e.target.value; markStale(); });
 
   el("go")?.addEventListener("click", () => {
     const { roster, errors } = parseRoster(IMP.rosterText || "");
@@ -851,7 +851,7 @@ function bindImport(){
     if (errors.some(e => /listed twice/.test(e))){ render(CURRENT); return; }
     IMP.structured = structure(IMP.text, { roster, filename: IMP.filename || "pasted.txt",
                                            workshop: IMP.workshop });
-    IMP.stale = false;
+    IMP.builtFrom = inputSignature();
     render(CURRENT);
     document.querySelector("#main section:nth-of-type(2)")?.scrollIntoView({behavior:"smooth",block:"start"});
   });

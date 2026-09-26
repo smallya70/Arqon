@@ -92,6 +92,19 @@ t("ref is fingerprint/id",
   d1.passages[0].ref === d1.source.fingerprint + "/" + d1.passages[0].id);
 t("every passage carries a ref", d1.passages.every(p => p.ref));
 
+console.log("\nstaleness is derived from the inputs");
+/* Mirrors what both pages do: fingerprint the inputs when the result is built,
+   compare on every render. A new input path is covered without being patched. */
+const sig = (text, rosterText, workshop) => fingerprint([text, rosterText, workshop].join("\u0000"));
+const built = sig(TXT, ROSTER, "W-049");
+t("unchanged inputs are not stale", sig(TXT, ROSTER, "W-049") === built);
+t("a different roster is stale", sig(TXT, ROSTER + "\nNew Person, Observer", "W-049") !== built);
+t("a roster loaded from a file is stale", sig(TXT, "name, designation\nA, B", "W-049") !== built);
+t("the sample roster is stale", sig(TXT, "name, designation\nMaria Torres, Facilitator", "W-049") !== built);
+t("a different workshop ref is stale", sig(TXT, ROSTER, "W-050") !== built);
+t("a different transcript is stale", sig(TXT + "\n[10:00] Maria Torres: more", ROSTER, "W-049") !== built);
+t("whitespace in the roster still counts", sig(TXT, ROSTER + " ", "W-049") !== built);
+
 console.log("\nrepeatability");
 const s2 = structure(TXT, { roster, filename: "t.txt", workshop: "W-049" });
 t("same fingerprint", s.source.fingerprint === s2.source.fingerprint);

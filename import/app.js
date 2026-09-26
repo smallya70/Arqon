@@ -18,7 +18,13 @@ Hui Lim, "Regional finance lead, APAC"
 Dele Ahmed, Group controller
 Sade Okonjo, Accounting policy lead`;
 
-let transcriptText = "", structured = null, rosterErrors = [], stale = false;
+let transcriptText = "", structured = null, rosterErrors = [], builtFrom = null;
+
+/* Staleness is derived from the inputs, not flagged by each handler — flagging
+   left an old result downloadable on any path nobody remembered to patch. */
+const inputSignature = () =>
+  fingerprint([transcriptText, $("roster").value || "", $("wref").value || ""].join("\u0000"));
+const isStale = () => !!structured && builtFrom !== inputSignature();
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c =>
@@ -40,18 +46,19 @@ function readFile(file, then){
 
 $("tfile").addEventListener("change", e => {
   const f = e.target.files[0];
-  if (f) readFile(f, (text, name) => { transcriptText = text; $("tfile").dataset.name = name; ready(); });
+  if (f) readFile(f, (text, name) => { transcriptText = text; $("tfile").dataset.name = name;
+                                      ready(); markStale(); });
 });
 $("rfile").addEventListener("change", e => {
   const f = e.target.files[0];
-  if (f) readFile(f, (text) => { $("roster").value = text; });
+  if (f) readFile(f, (text) => { $("roster").value = text; markStale(); });
 });
 $("sample").addEventListener("click", () => {
   transcriptText = SAMPLE_TRANSCRIPT; $("tfile").dataset.name = "sample-session.txt";
-  $("wref").value = $("wref").value || "W-049"; ready();
+  $("wref").value = $("wref").value || "W-049"; ready(); markStale();
   $("status").textContent += " — sample";
 });
-$("rsample").addEventListener("click", () => { $("roster").value = SAMPLE_ROSTER; });
+$("rsample").addEventListener("click", () => { $("roster").value = SAMPLE_ROSTER; markStale(); });
 
 function showRosterErrors(){
   $("rerr").innerHTML = rosterErrors.length
@@ -66,13 +73,12 @@ function showRosterErrors(){
    export the assignments from before the edit. Withhold the export until it is
    rebuilt. */
 function markStale(){
-  if (!structured || stale) return;
-  stale = true;
-  const s = $("stale"); if (s) s.className = "err";
-  ["dl","cp"].forEach(id => { const b = $(id); if (b) b.disabled = true; });
+  const stale = isStale();
+  const s = $("stale"); if (s) s.className = stale ? "err" : "hide";
+  ["dl","cp"].forEach(id => { const b = $(id); if (b) b.disabled = stale; });
 }
-$("roster").addEventListener("input", markStale);
-$("wref").addEventListener("input", markStale);
+/* Every input that the result depends on, including the ones added later. */
+["roster","wref"].forEach(id => $(id).addEventListener("input", markStale));
 
 $("go").addEventListener("click", () => {
   const { roster, errors } = parseRoster($("roster").value || "");
@@ -82,12 +88,12 @@ $("go").addEventListener("click", () => {
      speaker cleanly and wrongly. */
   if (errors.some(e => /listed twice/.test(e))) return;
 
-  stale = false;
   structured = structure(transcriptText, {
     roster,
     filename: $("tfile").dataset.name || "pasted.txt",
     workshop: $("wref").value.trim(),
   });
+  builtFrom = inputSignature();
   renderResult();
   $("result").scrollIntoView({ behavior: "smooth", block: "start" });
 });
