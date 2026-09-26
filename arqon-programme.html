@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARQON — programme view</title>
+<style>
+  :root{--ink:#0f172a;--body:#334155;--mute:#64748b;--faint:#94a3b8;--line:#cbd5e1;
+        --hair:#e2e8f0;--page:#fafaf9;--mark:#f59e0b;--mark-bg:#fffbeb;--bad:#9f1239;
+        --ok:#15803d;--rule:#0f172a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  button{font:inherit;cursor:pointer;border:0;background:none}
+
+  header{background:#fff;border-bottom:1px solid var(--line)}
+  .bar{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 20px;
+       padding:14px 28px;max-width:1180px;margin:0 auto}
+  .brand{font-weight:600;letter-spacing:.03em}
+  .client{font-size:15px;color:var(--body)}
+  .ref{font-size:12px;color:var(--faint)}
+  .lens{margin-left:auto;display:flex;gap:2px;border:1px solid var(--line)}
+  .lens button{padding:6px 14px;font-size:12.5px;color:var(--body)}
+  .lens button:hover{background:#f1f5f9}
+  .lens button.on{background:var(--ink);color:#fff}
+
+  main{max-width:1180px;margin:0 auto;padding:28px}
+  .lensnote{border-left:2px solid var(--mark);background:var(--mark-bg);
+            padding:12px 16px;font-size:13px;color:#78350f;margin:0 0 28px}
+
+  section{margin:0 0 38px}
+  h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--mute);
+     font-weight:600;margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  h3{font-size:15px;margin:0 0 4px}
+  p.lead{color:var(--body);margin:0 0 16px;max-width:76ch}
+
+  .figures{display:grid;gap:1px;background:var(--line);border:1px solid var(--line)}
+  @media(min-width:760px){.figures{grid-template-columns:repeat(4,1fr)}}
+  .fig{background:#fff;padding:16px 18px}
+  .fig .n{font-size:30px;line-height:1.1;letter-spacing:-.02em}
+  .fig .l{font-size:12.5px;color:var(--mute);margin-top:4px}
+  .fig .s{font-size:12px;color:var(--faint);margin-top:6px}
+  .fig.warn .n{color:var(--bad)}
+
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);font-size:14px}
+  th{text-align:left;font-size:11.5px;letter-spacing:.03em;color:var(--mute);font-weight:500;
+     padding:9px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:9px 14px;border-bottom:1px solid var(--hair);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .sub{display:block;font-size:12px;color:var(--faint);margin-top:2px}
+  .bad{color:var(--bad)}.ok{color:var(--ok)}.warnx{color:#92400e}
+
+  .bar2{display:flex;height:8px;background:var(--hair);overflow:hidden;min-width:110px}
+  .bar2 i{display:block;height:100%}
+  .bar2 .r{background:var(--ink)}
+  .bar2 .b{background:var(--mark)}
+
+  .item{border:1px solid var(--line);background:#fff;padding:18px 20px;margin-bottom:12px}
+  .item .id{font-size:11.5px;color:var(--mute)}
+  .item p{margin:8px 0 0;color:var(--body);font-size:14px;max-width:78ch}
+  .item .impact{margin-top:10px;font-size:13px;color:var(--ink)}
+  .item .meta{margin-top:12px;font-size:12px;color:var(--faint)}
+  .sev{font-size:11px;padding:2px 8px;color:#fff}
+  .sev.high{background:#9f1239}.sev.medium{background:#c2410c}
+
+  .pillrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .pill{font-size:11.5px;padding:2px 9px;border:1px solid var(--line);color:var(--body)}
+  .pill.gap{border-color:var(--bad);color:var(--bad)}
+  .pill.partial{border-color:var(--mark);color:#92400e}
+
+  footer{border-top:1px solid var(--line);margin-top:20px}
+  footer div{max-width:1180px;margin:0 auto;padding:18px 28px;font-size:13px;color:var(--mute)}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <span class="brand">ARQON</span>
+  <span class="client" id="client"></span>
+  <span class="ref" id="ref"></span>
+  <span class="lens">
+    <button data-lens="steering">Steering committee</button>
+    <button data-lens="lead">Programme lead</button>
+    <button data-lens="sponsor">Client sponsor</button>
+  </span>
+</div></header>
+<main id="main"></main>
+<footer><div id="foot"></div></footer>
+<script>
+/* Synthetic programme, shaped like the one in the platform brief:
+   214 subsidiaries, 12 workstreams, 14 workshops. Nothing here is real. */
+
+const PROGRAMME = {
+  client: "Northbridge Group",
+  name: "Consolidation replacement",
+  ref: "PRG-001",
+  phase: "Design",
+  entities: 214,
+  archetypes: 12,
+  weeksElapsed: 9,
+  weeksPlanned: 20,
+};
+
+const WORKSHOPS = [
+  ["W-038","Entity structure and ownership","Group","done","2026-07-14",26,0],
+  ["W-039","Chart of accounts alignment","Group","done","2026-07-16",22,1],
+  ["W-040","Close calendar and milestones","Group","done","2026-07-21",18,0],
+  ["W-041","Currency translation","EMEA","done","2026-07-23",24,2],
+  ["W-042","Intercompany and eliminations","EMEA","done","2026-07-28",31,3],
+  ["W-043","Minority interests and equity","Group","done","2026-08-04",19,1],
+  ["W-044","Statutory disclosures","Group","done","2026-08-11",28,4],
+  ["W-045","Intercompany and eliminations","APAC","done","2026-08-18",27,2],
+  ["W-046","Currency translation","APAC","done","2026-08-25",21,1],
+  ["W-047","Management reporting","Group","scheduled","2026-09-29",0,0],
+  ["W-048","Controls and reconciliation","Group","scheduled","2026-10-06",0,0],
+  ["W-049","Intercompany and eliminations","Americas","scheduled","2026-10-13",0,0],
+  ["W-050","Migration and opening balances","Group","scheduled","2026-10-20",0,0],
+  ["W-051","Security and segregation of duties","Group","scheduled","2026-10-27",0,0],
+].map(([id,title,region,state,date,records,contradictions])=>
+  ({id,title,region,state,date,records,contradictions}));
+
+/* Records rolled up. blocked_on is the field class holding each one back. */
+const BY_KIND = [
+  ["Requirement", 94, 61, 33, "priority, acceptance criteria, entity scope"],
+  ["Decision",    38, 34,  4, "confirmed authority"],
+  ["Open question",41, 12, 29, "owner, answer outstanding"],
+  ["Issue",       17,  9,  8, "impact, resolution"],
+  ["Risk",         9,  5,  4, "owner, mitigation"],
+  ["Exception",   14,  4, 10, "baseline rule, end date, approver"],
+  ["Action",      22, 15,  7, "due date"],
+  ["Assumption",  11,  6,  5, "validation date"],
+].map(([kind,total,ready,blocked,blockers])=>({kind,total,ready,blocked,blockers}));
+
+/* Who is holding things up, and for how long. The number that runs a programme. */
+const BY_OWNER = [
+  ["Accounting policy lead","client",23,41,"Statutory disclosures, hyperinflation treatment"],
+  ["Group consolidation lead","client",18,22,"Intercompany tolerances, close calendar"],
+  ["Programme data architect","DI",11,9,"Entity master, effective dating"],
+  ["Regional finance lead, APAC","client",9,34,"Local GAAP variations"],
+  ["Regional finance lead, EMEA","client",7,12,"Intercompany counterparty data"],
+  ["Finance control and audit","client",6,28,"Control design, SoD"],
+  ["Unassigned","—",26,17,"No owner named in the session"],
+].map(([role,side,count,oldestDays,topics])=>({role,side,count,oldestDays,topics}));
+
+/* What steering is actually being asked to settle. */
+const STEERING_DECISIONS = [
+  ["SD-01","Ownership register cadence",
+   "Legal provides a quarterly extract with no effective dates. Mid-period acquisitions cannot consolidate from the acquisition date without a monthly, dated feed.",
+   "Blocks 14 requirements across entity structure and ownership.","Legal and Group Finance","raised 5 weeks ago"],
+  ["SD-02","Hyperinflationary entity treatment",
+   "Turkey and Argentina restate under IAS 29 before translating. The departure is permanent, so it is not an exception and needs classifying as a standing local treatment.",
+   "Blocks the translation design for 2 entities and the archetype model.","Accounting policy","raised 3 weeks ago"],
+  ["SD-03","Manual NCI calculation",
+   "NCI is calculated in a spreadsheet and posted by journal. One posting was misstated last year and corrected at review.",
+   "Named by the policy lead as the largest manual risk in the close.","Group Finance","raised 2 weeks ago"],
+];
+
+const RISKS = [
+  ["R-01","Ownership data cannot be supplied with effective dates","high",
+   "Design assumes dated entity membership. If legal cannot supply it, the elimination and NCI design changes materially.","Programme data architect"],
+  ["R-02","Two acquired entities remain on a legacy ledger until the 2027 close","medium",
+   "Manual submission for the first two close cycles. Exception has no approver and no documented baseline.","Group consolidation lead"],
+  ["R-03","Statutory disclosure scope underestimated","medium",
+   "IFRS 16 and revenue recognition treatments were raised late and are not yet reflected in the workstream plan.","Accounting policy lead"],
+];
+
+/* Archetype coverage — the thing that makes 214 entities tractable. */
+const ARCHETYPES = [
+  ["Wholly owned trading, single ERP",71,"covered","W-038, W-042"],
+  ["Wholly owned trading, legacy ERP",34,"covered","W-038, W-045"],
+  ["Majority owned with NCI",28,"covered","W-043"],
+  ["Equity accounted associate",19,"partial","W-043 — treatment disputed for 1 entity"],
+  ["Joint venture, proportionate",12,"gap","no workshop covers this yet"],
+  ["Hyperinflationary economy",2,"partial","W-041 — classification unresolved"],
+  ["Dormant / in liquidation",16,"gap","no workshop covers this yet"],
+  ["Branch, no separate ledger",9,"covered","W-038"],
+  ["Recently acquired, pre-integration",8,"partial","W-042 — exception pending approval"],
+  ["Holding company, no trade",11,"covered","W-038"],
+  ["Regulated entity, local GAAP",3,"gap","no workshop covers this yet"],
+  ["Shared service centre",1,"covered","W-040"],
+];
+
+const ANALYST_QUEUE = [
+  ["M. Torres",9,"W-046 extraction reviewed to passage 180 of 240"],
+  ["P. Nair",0,"clear"],
+  ["J. Whitfield",23,"W-045 not started — on leave until Monday"],
+];
+const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const sum = (a,f) => a.reduce((n,x)=>n+f(x),0);
+
+const totals = {
+  records: sum(BY_KIND,k=>k.total),
+  ready:   sum(BY_KIND,k=>k.ready),
+  blocked: sum(BY_KIND,k=>k.blocked),
+  done:    WORKSHOPS.filter(w=>w.state==="done").length,
+  contradictions: sum(WORKSHOPS,w=>w.contradictions),
+  clientBlocked: sum(BY_OWNER.filter(o=>o.side==="client"),o=>o.count),
+  diBlocked:     sum(BY_OWNER.filter(o=>o.side==="DI"),o=>o.count),
+  unassigned:    BY_OWNER.find(o=>o.role==="Unassigned").count,
+  gaps: ARCHETYPES.filter(a=>a[2]==="gap").length,
+  queue: sum(ANALYST_QUEUE,q=>q[1]),
+};
+
+const LENS = {
+  steering: {
+    note: "Steering view. Decisions this committee is being asked to settle, the risks behind " +
+          "them, and progress against plan. Delivery mechanics are deliberately not shown.",
+    foot: "Every figure traces to a record, and every record to the passage of the workshop that " +
+          "produced it. Ask for any of them."
+  },
+  lead: {
+    note: "Programme lead view. Everything, including analyst queues and archetype coverage. " +
+          "This is the working screen.",
+    foot: "Blocked records are the number that matters. Nothing downstream moves until the fields " +
+          "in the right-hand column are supplied by the named owner."
+  },
+  sponsor: {
+    note: "Client view. Progress on your programme and what is outstanding with your people. " +
+          "Our internal delivery metrics are not shown here.",
+    foot: "Outstanding items sit with named roles in your organisation. Each links to the record " +
+          "and the workshop passage it came from."
+  },
+};
+
+const fig = (n,l,s,warn) =>
+  `<div class="fig${warn?" warn":""}"><div class="n">${n}</div><div class="l">${l}</div>${
+    s?`<div class="s">${s}</div>`:""}</div>`;
+
+function headline(lens){
+  const pct = Math.round(totals.ready/totals.records*100);
+  if(lens==="steering") return `<section>
+    <div class="figures">
+      ${fig(`${totals.done} of ${WORKSHOPS.length}`,"workshops held",
+            `week ${PROGRAMME.weeksElapsed} of ${PROGRAMME.weeksPlanned}`)}
+      ${fig(totals.records,"records captured","typed, evidenced, analyst-reviewed")}
+      ${fig(`${pct}%`,"complete enough to sign off",`${totals.blocked} still blocked`,pct<70)}
+      ${fig(STEERING_DECISIONS.length,"decisions needed from this committee","see below",true)}
+    </div></section>`;
+  if(lens==="sponsor") return `<section>
+    <div class="figures">
+      ${fig(`${totals.done} of ${WORKSHOPS.length}`,"workshops held",
+            `next: ${WORKSHOPS.find(w=>w.state==="scheduled").date}`)}
+      ${fig(totals.records,"requirements and decisions captured","from your sessions")}
+      ${fig(totals.clientBlocked,"items awaiting your people","by role, below",true)}
+      ${fig(totals.contradictions,"contradictions found between your documents","raised as questions")}
+    </div></section>`;
+  return `<section>
+    <div class="figures">
+      ${fig(`${totals.done}/${WORKSHOPS.length}`,"workshops processed",
+            `week ${PROGRAMME.weeksElapsed} of ${PROGRAMME.weeksPlanned}`)}
+      ${fig(totals.records,"records","ready "+totals.ready+" · blocked "+totals.blocked)}
+      ${fig(totals.queue,"in the analyst review queue","unreviewed extractions",totals.queue>20)}
+      ${fig(totals.gaps,"archetypes with no workshop",`of ${PROGRAMME.archetypes}`,totals.gaps>0)}
+    </div></section>`;
+}
+
+const decisions = () => `<section>
+  <h2>Decisions needed from steering</h2>
+  <p class="lead">Each of these is blocking design work and cannot be settled by the programme
+  team. They are shown with what they block, not only what they are.</p>
+  ${STEERING_DECISIONS.map(([id,title,body,impact,owner,age])=>`
+    <div class="item">
+      <div class="id mono">${id}</div>
+      <h3>${esc(title)}</h3>
+      <p>${esc(body)}</p>
+      <div class="impact"><strong>Blocks:</strong> ${esc(impact)}</div>
+      <div class="meta">Sits with ${esc(owner)} · ${esc(age)}</div>
+    </div>`).join("")}
+</section>`;
+
+const risks = () => `<section>
+  <h2>Risks</h2>
+  ${RISKS.map(([id,title,sev,body,owner])=>`
+    <div class="item">
+      <div class="id mono">${id} <span class="sev ${sev}">${sev}</span></div>
+      <h3>${esc(title)}</h3>
+      <p>${esc(body)}</p>
+      <div class="meta">Owner: ${esc(owner)}</div>
+    </div>`).join("")}
+</section>`;
+
+function kinds(){
+  return `<section><h2>Records by kind</h2>
+  <p class="lead">A record is ready when every field its kind requires has been supplied. Most
+  blockers are fields nobody stated in the session — they are supplied by a reviewer, not inferred.</p>
+  <table><thead><tr><th>Kind</th><th class="num">Total</th><th class="num">Ready</th>
+    <th class="num">Blocked</th><th style="width:150px"></th><th>Typically waiting on</th></tr></thead>
+  <tbody>${BY_KIND.map(k=>`<tr>
+    <td>${k.kind}</td><td class="num">${k.total}</td>
+    <td class="num ok">${k.ready}</td><td class="num ${k.blocked?"bad":""}">${k.blocked}</td>
+    <td><span class="bar2"><i class="r" style="width:${k.ready/k.total*100}%"></i>
+        <i class="b" style="width:${k.blocked/k.total*100}%"></i></span></td>
+    <td style="font-size:13px;color:var(--mute)">${esc(k.blockers)}</td></tr>`).join("")}
+  </tbody></table></section>`;
+}
+
+function owners(lens){
+  const rows = lens==="sponsor" ? BY_OWNER.filter(o=>o.side!=="DI") : BY_OWNER;
+  return `<section><h2>${lens==="sponsor"?"Outstanding with your people":"Blocked records by owner"}</h2>
+  <p class="lead">${lens==="sponsor"
+    ? "Each item needs a field supplied, a question answered or an approval given. Nothing moves until it is."
+    : "The number that runs a programme. Age is the oldest outstanding item for that role."}</p>
+  <table><thead><tr><th>Role</th>${lens!=="sponsor"?"<th>Side</th>":""}
+    <th class="num">Blocked</th><th class="num">Oldest</th><th>Subjects</th></tr></thead>
+  <tbody>${rows.map(o=>`<tr>
+    <td>${esc(o.role)}</td>
+    ${lens!=="sponsor"?`<td style="font-size:13px;color:var(--mute)">${o.side}</td>`:""}
+    <td class="num ${o.count>15?"bad":""}">${o.count}</td>
+    <td class="num ${o.oldestDays>30?"bad":""}">${o.oldestDays}d</td>
+    <td style="font-size:13px;color:var(--body)">${esc(o.topics)}</td></tr>`).join("")}
+  </tbody></table>
+  ${lens!=="sponsor"&&totals.unassigned?`<p class="lead" style="margin-top:12px">
+    <span class="bad">${totals.unassigned} records have no owner at all.</span> Nobody was named in
+    the session and no reviewer has assigned one. They are invisible to everyone until someone is.</p>`:""}
+  </section>`;
+}
+
+const workshops = lens => `<section><h2>Workshops</h2>
+  <table><thead><tr><th>Ref</th><th>Subject</th><th>Region</th><th>Date</th>
+    <th class="num">Records</th>${lens!=="sponsor"?'<th class="num">Contradictions</th>':""}
+    <th>Status</th></tr></thead>
+  <tbody>${WORKSHOPS.map(w=>`<tr>
+    <td class="mono" style="font-size:12.5px">${w.id}</td>
+    <td>${esc(w.title)}</td>
+    <td style="font-size:13px;color:var(--mute)">${w.region}</td>
+    <td class="mono" style="font-size:12.5px">${w.date}</td>
+    <td class="num">${w.records||"—"}</td>
+    ${lens!=="sponsor"?`<td class="num ${w.contradictions?"warnx":""}">${w.contradictions||"—"}</td>`:""}
+    <td style="font-size:13px" class="${w.state==="done"?"ok":""}">${w.state}</td></tr>`).join("")}
+  </tbody></table></section>`;
+
+const archetypes = () => `<section><h2>Entity archetype coverage</h2>
+  <p class="lead">${PROGRAMME.entities} entities reduced to ${PROGRAMME.archetypes} patterns. A gap
+  means no workshop has covered how those entities are treated — the design has nothing to say about
+  them yet.</p>
+  <table><thead><tr><th>Archetype</th><th class="num">Entities</th><th>Coverage</th>
+    <th>Evidence</th></tr></thead>
+  <tbody>${ARCHETYPES.map(([name,n,status,note])=>`<tr>
+    <td>${esc(name)}</td><td class="num">${n}</td>
+    <td><span class="pill ${status==="covered"?"":status}">${status}</span></td>
+    <td style="font-size:13px;color:var(--mute)">${esc(note)}</td></tr>`).join("")}
+  </tbody></table></section>`;
+
+const queue = () => `<section><h2>Analyst review queue</h2>
+  <p class="lead">Extractions waiting on a human to accept, edit or reject. A queue that stops
+  clearing is the first sign a programme is slipping, and it shows here before it shows anywhere else.</p>
+  <table><thead><tr><th>Analyst</th><th class="num">Waiting</th><th>Position</th></tr></thead>
+  <tbody>${ANALYST_QUEUE.map(([who,n,note])=>`<tr>
+    <td>${esc(who)}</td><td class="num ${n>15?"bad":n?"":"ok"}">${n||"—"}</td>
+    <td style="font-size:13px;color:var(--body)">${esc(note)}</td></tr>`).join("")}
+  </tbody></table></section>`;
+
+function render(lens){
+  document.getElementById("client").textContent = `${PROGRAMME.client} · ${PROGRAMME.name}`;
+  document.getElementById("ref").textContent = `${PROGRAMME.ref} · ${PROGRAMME.phase} phase`;
+  document.querySelectorAll(".lens button").forEach(b=>
+    b.classList.toggle("on", b.dataset.lens===lens));
+  const parts = [`<p class="lensnote">${LENS[lens].note}</p>`, headline(lens)];
+  if(lens==="steering") parts.push(decisions(), risks(), kinds(), workshops(lens));
+  if(lens==="sponsor")  parts.push(decisions(), owners(lens), workshops(lens));
+  if(lens==="lead")     parts.push(queue(), owners(lens), kinds(), archetypes(),
+                                   workshops(lens), decisions(), risks());
+  document.getElementById("main").innerHTML = parts.join("");
+  document.getElementById("foot").textContent = LENS[lens].foot;
+}
+
+document.addEventListener("click", e=>{
+  const b = e.target.closest("[data-lens]");
+  if(b) render(b.dataset.lens);
+});
+render("lead");
+</script>
+</body>
+</html>

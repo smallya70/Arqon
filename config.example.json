@@ -1,0 +1,15 @@
+{
+  "dbPath": "./arqon.db",
+  "registerUrl": "https://arqon.diintl.com",
+  "requestedBy": "S. Mallya",
+  "graph": {
+    "clientId": "<multi-tenant app registration client id>",
+    "clientSecret": "<from a secret store, not this file in production>",
+    "refreshTokens": {
+      "<client-tenant-guid>": "<delegated refresh token from the analyst's sign-in>"
+    }
+  },
+  "programmes": {
+    "PRG-001": { "name": "Consolidation replacement", "registerUrl": "https://arqon.diintl.com/prg/001" }
+  }
+}
