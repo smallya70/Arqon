@@ -6,10 +6,9 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from 
 import { join } from "node:path";
 import { sha256 } from "./manifest.js";
 
-const ROOT = process.env.ARQON_STORE || ".arqon";
-const SETS = join(ROOT, "candidate-sets");
-
-const ensure = () => { mkdirSync(SETS, { recursive: true }); };
+/* Resolved at call time, not at import. */
+const SETS = () => join(process.env.ARQON_STORE || ".arqon", "candidate-sets");
+const ensure = () => { mkdirSync(SETS(), { recursive: true }); };
 
 export function save(output, { validation, source, provider }) {
   ensure();
@@ -34,18 +33,18 @@ export function save(output, { validation, source, provider }) {
     rejected: validation.rejected,
   };
   record.contentHash = sha256(Buffer.from(JSON.stringify(record)));
-  writeFileSync(join(SETS, id + ".json"), JSON.stringify(record, null, 2));
-  return { id, path: join(SETS, id + ".json") };
+  writeFileSync(join(SETS(), id + ".json"), JSON.stringify(record, null, 2));
+  return { id, path: join(SETS(), id + ".json") };
 }
 
 export function list() {
-  if (!existsSync(SETS)) return [];
-  return readdirSync(SETS).filter(f => f.endsWith(".json")).map(f => {
-    const r = JSON.parse(readFileSync(join(SETS, f), "utf8"));
+  if (!existsSync(SETS())) return [];
+  return readdirSync(SETS()).filter(f => f.endsWith(".json")).map(f => {
+    const r = JSON.parse(readFileSync(join(SETS(), f), "utf8"));
     return { id: r.id, savedAt: r.savedAt, state: r.state,
              accepted: r.validation.accepted, rejected: r.validation.rejected,
              workshop: r.source.workshop, fingerprint: r.source.fingerprint };
   }).sort((a, b) => a.savedAt.localeCompare(b.savedAt));
 }
 
-export const load = (id) => JSON.parse(readFileSync(join(SETS, id + ".json"), "utf8"));
+export const load = (id) => JSON.parse(readFileSync(join(SETS(), id + ".json"), "utf8"));

@@ -17,6 +17,7 @@ import * as manual from "./providers/manual.js";
 import { validate } from "./validate.js";
 import { save, list, load } from "./store.js";
 import { evaluate } from "./evaluate.js";
+import { recordSent, recordReply, recordResolution, list as outbox, historyFor } from "./outbox.js";
 import { sha256 } from "./manifest.js";
 import { POLICY } from "./contract.js";
 
@@ -136,6 +137,72 @@ if (verb === "prepare") {
   if (r.basis.kindsAbsentFromReference.length)
     console.log(`  Absent from the reference entirely: ${r.basis.kindsAbsentFromReference.join(", ")}.` +
                 ` Nothing here measures those kinds.\n`);
+
+} else if (verb === "sent") {
+  /* Log a message a person sent. The tool did not send it and says so. */
+  const body = flag("body") ? readFileSync(flag("body"), "utf8") : null;
+  const m = recordSent({
+    to: (flag("to") ?? die("--to is required")).split(",").map(s => s.trim()),
+    subject: flag("subject"),
+    body,
+    recordIds: (flag("records") ?? die("--records IC-001,Q-002 is required"))
+                 .split(",").map(s => s.trim()),
+    sentBy: flag("by") ?? die("--by is required: who sent it"),
+    programme: flag("programme", null),
+  });
+  console.log(`\nlogged       ${m.id}`);
+  console.log(`to           ${m.to.join(", ")}`);
+  console.log(`records      ${m.recordIds.join(", ")}`);
+  console.log(`attestation  ${m.attestation}\n`);
+
+} else if (verb === "reply") {
+  const m = recordReply(args[1] ?? die("Usage: reply <message-id> --from ... --text ..."), {
+    from: flag("from") ?? die("--from is required"),
+    text: flag("text") ?? (flag("file") ? readFileSync(flag("file"), "utf8")
+                                        : die("--text or --file is required")),
+  });
+  const r = m.replies[m.replies.length - 1];
+  console.log(`\nlogged       ${r.id}  from ${r.from}`);
+  console.log(`\nA reply is evidence, not an answer. Record a resolution when someone with`);
+  console.log(`authority over the subject decides:`);
+  console.log(`  node arqon.js resolve ${m.id} --record <id> --decision answered \\`);
+  console.log(`    --by "<name>" --authority "<why they may decide this>"\n`);
+
+} else if (verb === "resolve") {
+  const m = recordResolution(args[1] ?? die("Usage: resolve <message-id> --record ... --decision ..."), {
+    recordId: flag("record") ?? die("--record is required"),
+    decision: flag("decision") ?? die("--decision answered|not_answered|superseded|withdrawn"),
+    by: flag("by") ?? die("--by is required"),
+    authorityBasis: flag("authority") ?? die("--authority is required: why this person may decide it"),
+    note: flag("note", ""),
+  });
+  const r = m.resolutions[m.resolutions.length - 1];
+  console.log(`\n${r.recordId}  ${r.decision}  by ${r.by}`);
+  console.log(`authority    ${r.authorityBasis}\n`);
+
+} else if (verb === "history") {
+  const h = historyFor(args[1] ?? die("Usage: history <record-id>"));
+  console.log(`\n${h.recordId}  —  ${h.state}\n`);
+  if (!h.asked.length) console.log("  never asked\n");
+  for (const a of h.asked)
+    console.log(`  asked      ${a.sentAt}  ${a.to.join(", ")}  (${a.message}, ${a.channel})`);
+  for (const r of h.replies)
+    console.log(`  reply      ${r.receivedAt}  ${r.from}\n               ${r.text.slice(0, 90)}`);
+  for (const r of h.resolutions)
+    console.log(`  resolved   ${r.at}  ${r.decision}  by ${r.by} — ${r.authorityBasis}`);
+  if (h.replies.length && !h.resolutions.length)
+    console.log(`\n  A reply is recorded but nobody has resolved this. It remains open.`);
+  console.log("");
+
+} else if (verb === "outbox") {
+  const all = outbox();
+  if (!all.length) { console.log("\nNothing logged.\n"); process.exit(0); }
+  console.log("");
+  for (const m of all)
+    console.log(`  ${m.id}  ${m.sentAt.slice(0,16)}  ${m.to.join(",")}\n` +
+                `    records ${m.recordIds.join(", ")} · replies ${m.replies.length} · ` +
+                `resolutions ${m.resolutions.length}`);
+  console.log("");
 
 } else if (verb === "list") {
   const sets = list();

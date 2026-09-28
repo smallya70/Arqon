@@ -106,6 +106,37 @@ Segmentation is not scored. Matching is by passage overlap, so a candidate
 covering three reference records, or three covering one, is counted as covering
 what it cites. Fourteen is the reference's decomposition, not a target.
 
+## Message record
+
+The sending is manual and will be backend-managed later. The record of it is
+neither, and that is the gap this closes: "was the policy lead ever asked about
+Q-002, and did they answer?" has to be answerable from the system rather than
+from someone's sent items.
+
+    node arqon.js sent    --to a@b.com --records Q-002,IC-001 --by "S. Mallya"
+    node arqon.js reply   <message-id> --from a@b.com --text "..."
+    node arqon.js resolve <message-id> --record Q-002 --decision answered \
+                          --by "S. Okonjo" --authority "accounting policy lead"
+    node arqon.js history <record-id>
+    node arqon.js outbox
+
+Three events, three authors, never collapsed:
+
+| Event | What it is |
+|---|---|
+| sent | A question was put to someone, covering named records |
+| reply | Something came back. Evidence, not an answer |
+| resolution | Someone with authority decided the question is closed |
+
+**A reply does not close anything.** `history` reports "replied, unresolved"
+and says so. A resolution requires who decided and on what authority, because a
+reply from someone without authority over the subject settles nothing — and a
+system that resolves on reply accumulates decisions nobody made.
+
+A manual send is recorded as a claim: "reported by the sender; the tool did not
+send or observe this message". When Graph sends it, the attestation changes and
+the rest of the shape does not.
+
 ## Not built here
 
 The review queue and its operations — accept, edit, reject, defer with change
