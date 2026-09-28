@@ -1,0 +1,484 @@
+{
+  "schema": "arqon.candidate-set/1",
+  "id": "W-049-1df000041775-1790569867084",
+  "savedAt": "2026-09-28T04:31:07.084Z",
+  "state": "awaiting_review",
+  "source": {
+    "filename": "../w049/W049-reference.json",
+    "fingerprint": "1df000041775",
+    "sha256": "51e01c626cd80c3b790153956d7ad3dade46ccd71ba11ac09a3db78f4d4733f2",
+    "workshop": "W-049"
+  },
+  "provider": {
+    "provider": "manual",
+    "model": "Claude Opus 5.5 (contaminated context)",
+    "attestation": "supplied by a person; not observed by the tool"
+  },
+  "validation": {
+    "valid": true,
+    "accepted": 9,
+    "rejected": 0,
+    "summary": {},
+    "errors": []
+  },
+  "accepted": [
+    {
+      "id": "C-001",
+      "kind": "Requirement",
+      "requirementType": "Functional",
+      "requirementTypeCanonical": "Functional",
+      "statement": "Apply closing rate to balance sheet accounts and average rate to income statement accounts, with no local override.",
+      "recordOrigin": "explicit_statement",
+      "evidence": [
+        {
+          "ref": "1df000041775/P-009",
+          "passageId": "P-009",
+          "quote": "going forward the system must apply closing rate to balance sheet accounts and average rate to income statement accounts, with no local override"
+        },
+        {
+          "ref": "1df000041775/P-009",
+          "passageId": "P-009",
+          "quote": "That needs to be enforced, not documented."
+        }
+      ],
+      "owner": {
+        "reportedRole": null,
+        "resolvedPerson": null,
+        "ref": null
+      },
+      "routingSuggestion": {
+        "role": "Accounting policy lead",
+        "basis": "Stated the requirement in P-009"
+      },
+      "programmePriority": null,
+      "globalLocal": null,
+      "scopeText": "no local override",
+      "dueDate": null,
+      "dueCondition": null,
+      "missingFields": [
+        "owner",
+        "programmePriority",
+        "acceptanceCriteria",
+        "globalLocal"
+      ],
+      "uncertainties": [
+        "'No local override' points to global scope, but no global/local classification was stated.",
+        "'Enforced, not documented' could support classifying this as Control and audit rather than Functional.",
+        "P-010 'Agreed.' comes from a speaker recorded as unresolved, so this is not recorded as a settled Decision.",
+        "Hyperinflationary entities are carved out by the separate exception-route request (C-002)."
+      ],
+      "evidenceStatus": "Reported",
+      "annotationReview": "candidate",
+      "businessApproval": "not_evidenced"
+    },
+    {
+      "id": "C-002",
+      "kind": "Requirement",
+      "requirementType": "Workflow",
+      "requirementTypeCanonical": "Workflow",
+      "statement": "Provide an exception route for hyperinflationary entities that restate before translating at closing rate.",
+      "recordOrigin": "explicit_request",
+      "evidence": [
+        {
+          "ref": "1df000041775/P-010",
+          "passageId": "P-010",
+          "quote": "we need an exception route for the hyperinflationary entities, because IAS 29 doesn't work that way"
+        },
+        {
+          "ref": "1df000041775/P-011",
+          "passageId": "P-011",
+          "quote": "Those restate first and then translate at closing."
+        },
+        {
+          "ref": "1df000041775/P-013",
+          "passageId": "P-013",
+          "quote": "So yes, indefinite."
+        }
+      ],
+      "owner": {
+        "reportedRole": null,
+        "resolvedPerson": null,
+        "ref": null
+      },
+      "routingSuggestion": {
+        "role": "Accounting policy lead",
+        "basis": "Described the hyperinflationary treatment in P-011 and P-013"
+      },
+      "programmePriority": null,
+      "globalLocal": null,
+      "scopeText": null,
+      "entityMentions": [
+        {
+          "text": "Turkey",
+          "entityId": null,
+          "resolution": "unresolved",
+          "sourceRef": "1df000041775/P-011"
+        },
+        {
+          "text": "Argentina",
+          "entityId": null,
+          "resolution": "unresolved",
+          "sourceRef": "1df000041775/P-011"
+        }
+      ],
+      "dueDate": null,
+      "dueCondition": null,
+      "missingFields": [
+        "owner",
+        "programmePriority",
+        "acceptanceCriteria",
+        "globalLocal",
+        "resolvedEntityIds"
+      ],
+      "uncertainties": [
+        "This is a request for an exception route, not an approved Exception: no approver, and duration is stated as indefinite (P-013), so there is no end date.",
+        "Turkey and Argentina are countries, not resolved legal entities.",
+        "The criteria for treating an economy as hyperinflationary, and who decides, were not stated."
+      ],
+      "evidenceStatus": "Reported",
+      "annotationReview": "candidate",
+      "businessApproval": "not_evidenced"
+    },
+    {
+      "id": "C-003",
+      "kind": "Open question",
+      "statement": "Confirm which entities still translate revenue at period-end rate, including whether Vietnam was corrected.",
+      "recordOrigin": "derived_from_explicit_uncertainty",
+      "evidence": [
+        {
+          "ref": "1df000041775/P-003",
+          "passageId": "P-003",
+          "quote": "three entities have been using period-end for revenue as well"
+        },
+        {
+          "ref": "1df000041775/P-005",
+          "passageId": "P-005",
+          "quote": "Singapore, Malaysia, and I think Vietnam. I'd have to check Vietnam."
+        },
+        {
+          "ref": "1df000041775/P-006",
+          "passageId": "P-006",
+          "quote": "We fixed Vietnam in March."
+        },
+        {
+          "ref": "1df000041775/P-008",
+          "passageId": "P-008",
+          "quote": "That was probably Wei on the line. Vietnam was corrected, I believe."
+        }
+      ],
+      "owner": {
+        "reportedRole": null,
+        "resolvedPerson": null,
+        "ref": null
+      },
+      "routingSuggestion": {
+        "role": "Group controller",
+        "basis": "Raised the issue in P-003 and said 'I'd have to check Vietnam' in P-005"
+      },
+      "entityMentions": [
+        {
+          "text": "Singapore",
+          "entityId": null,
+          "resolution": "unresolved",
+          "sourceRef": "1df000041775/P-005"
+        },
+        {
+          "text": "Malaysia",
+          "entityId": null,
+          "resolution": "unresolved",
+          "sourceRef": "1df000041775/P-005"
+        },
+        {
+          "text": "Vietnam",
+          "entityId": null,
+          "resolution": "unresolved",
+          "sourceRef": "1df000041775/P-005"
+        }
+      ],
+      "dueDate": null,
+      "dueCondition": null,
+      "missingFields": [
+        "owner",
+        "resolvedEntityIds"
+      ],
+      "uncertainties": [
+        "The Vietnam correction is reported by an uncertain speaker (P-006) and hedged in P-008 ('I believe'); it is not established.",
+        "'Wei' is not resolved to a person or role.",
+        "The current status of Singapore and Malaysia was not stated.",
+        "'I'd have to check' is not a commitment, so no owner is recorded."
+      ],
+      "evidenceStatus": "Reported",
+      "annotationReview": "candidate",
+      "businessApproval": "not_evidenced"
+    },
+    {
+      "id": "C-004",
+      "kind": "Requirement",
+      "requirementType": "Data",
+      "requirementTypeCanonical": "Data",
+      "statement": "Hold entity ownership with effective dates so a mid-period acquisition consolidates from its acquisition date.",
+      "recordOrigin": "explicit_statement",
+      "evidence": [
+        {
+          "ref": "1df000041775/P-019",
+          "passageId": "P-019",
+          "quote": "The system must hold entity ownership with effective dates, so a mid-period acquisition consolidates from the acquisition date rather than the whole period."
+        }
+      ],
+      "owner": {
+        "reportedRole": null,
+        "resolvedPerson": null,
+        "ref": null
+      },
+      "routingSuggestion": {
+        "role": "Accounting policy lead",
+        "basis": "Stated the requirement in P-019"
+      },
+      "programmePriority": null,
+      "globalLocal": null,
+      "scopeText": null,
+      "dueDate": null,
+      "dueCondition": null,
+      "missingFields": [
+        "owner",
+        "programmePriority",
+        "acceptanceCriteria",
+        "globalLocal"
+      ],
+      "uncertainties": [
+        "Whether Legal's system holds effective dates is unknown; see the action in C-006."
+      ],
+      "evidenceStatus": "Reported",
+      "annotationReview": "candidate",
+      "businessApproval": "not_evidenced"
+    },
+    {
+      "id": "C-005",
+      "kind": "Requirement",
+      "requirementType": "Integration",
+      "requirementTypeCanonical": "Integration",
+      "statement": "Feed the ownership register maintained by Legal into consolidation at least monthly.",
+      "recordOrigin": "explicit_request",
+      "evidence": [
+        {
+          "ref": "1df000041775/P-015",
+          "passageId": "P-015",
+          "quote": "Legal maintains it. We get a quarterly extract."
+        },
+        {
+          "ref": "1df000041775/P-017",
+          "passageId": "P-017",
+          "quote": "I'd want the register to feed through monthly at least."
+        }
+      ],
+      "owner": {
+        "reportedRole": null,
+        "resolvedPerson": null,
+        "ref": null
+      },
+      "routingSuggestion": {
+        "role": "Group controller",
+        "basis": "Requested monthly feed in P-017"
+      },
+      "programmePriority": null,
+      "globalLocal": null,
+      "scopeText": null,
+      "dueDate": null,
+      "dueCondition": null,
+      "missingFields": [
+        "owner",
+        "programmePriority",
+        "acceptanceCriteria",
+        "globalLocal"
+      ],
+      "uncertainties": [
+        "Stated as a personal preference ('I'd want'), not an agreed requirement.",
+        "P-018 says monthly frequency does not help unless effective dates are carried; this may be subordinate to C-004."
+      ],
+      "evidenceStatus": "Reported",
+      "annotationReview": "candidate",
+      "businessApproval": "not_evidenced"
+    },
+    {
+      "id": "C-006",
+      "kind": "Action",
+      "statement": "Ask Legal whether their system holds ownership effective dates and can provide them.",
+      "recordOrigin": "explicit_statement",
+      "evidence": [
+        {
+          "ref": "1df000041775/P-020",
+          "passageId": "P-020",
+          "quote": "Who can confirm legal will provide that?"
+        },
+        {
+          "ref": "1df000041775/P-021",
+          "passageId": "P-021",
+          "quote": "I'll ask. I don't know whether their system holds effective dates at all."
+        }
+      ],
+      "owner": {
+        "reportedRole": "Group controller",
+        "resolvedPerson": null,
+        "ref": "1df000041775/P-021"
+      },
+      "dueDate": null,
+      "dueCondition": null,
+      "missingFields": [
+        "owner.resolvedPerson",
+        "dueDate"
+      ],
+      "uncertainties": [
+        "The P-021 speaker is unresolved; P-003 labels the Group controller as D. Ahmed, but linking the two is for review.",
+        "No due date or condition was stated."
+      ],
+      "evidenceStatus": "Reported",
+      "annotationReview": "candidate",
+      "businessApproval": "not_evidenced"
+    },
+    {
+      "id": "C-007",
+      "kind": "Requirement",
+      "requirementType": "Functional",
+      "requirementTypeCanonical": "Functional",
+      "statement": "Calculate NCI in the system from ownership percentages instead of posting it manually.",
+      "recordOrigin": "explicit_statement",
+      "evidence": [
+        {
+          "ref": "1df000041775/P-025",
+          "passageId": "P-025",
+          "quote": "NCI should be calculated by the system from the ownership percentages, not posted manually."
+        }
+      ],
+      "owner": {
+        "reportedRole": null,
+        "resolvedPerson": null,
+        "ref": null
+      },
+      "routingSuggestion": {
+        "role": "Accounting policy lead",
+        "basis": "Stated the requirement in P-025"
+      },
+      "programmePriority": null,
+      "statedPriority": {
+        "value": "Must",
+        "qualifier": "For me yes",
+        "sourceRefs": [
+          "1df000041775/P-026",
+          "1df000041775/P-027"
+        ]
+      },
+      "globalLocal": null,
+      "scopeText": null,
+      "dueDate": null,
+      "dueCondition": null,
+      "missingFields": [
+        "owner",
+        "programmePriority",
+        "acceptanceCriteria",
+        "globalLocal"
+      ],
+      "uncertainties": [
+        "The must-have is a personal statement by the Accounting policy lead, not a programme priority.",
+        "Depends on ownership percentages being held in the system (see C-004)."
+      ],
+      "evidenceStatus": "Reported",
+      "annotationReview": "candidate",
+      "businessApproval": "not_evidenced"
+    },
+    {
+      "id": "C-008",
+      "kind": "Requirement",
+      "requirementType": "Reporting",
+      "requirementTypeCanonical": "Reporting",
+      "statement": "Show NCI split by entity in the reporting pack.",
+      "recordOrigin": "explicit_request",
+      "evidence": [
+        {
+          "ref": "1df000041775/P-028",
+          "passageId": "P-028",
+          "quote": "I'd also quite like to see NCI split by entity in the reporting pack."
+        }
+      ],
+      "owner": {
+        "reportedRole": null,
+        "resolvedPerson": null,
+        "ref": null
+      },
+      "routingSuggestion": {
+        "role": "Regional finance lead, APAC",
+        "basis": "Requested in P-028"
+      },
+      "programmePriority": null,
+      "statedPriority": {
+        "value": "Not essential",
+        "qualifier": "just useful",
+        "sourceRefs": [
+          "1df000041775/P-028"
+        ]
+      },
+      "globalLocal": null,
+      "scopeText": null,
+      "dueDate": null,
+      "dueCondition": null,
+      "missingFields": [
+        "owner",
+        "programmePriority",
+        "acceptanceCriteria",
+        "globalLocal"
+      ],
+      "uncertainties": [
+        "The facilitator deferred this to the reporting session (P-029); it may be restated or dropped there."
+      ],
+      "evidenceStatus": "Reported",
+      "annotationReview": "candidate",
+      "businessApproval": "not_evidenced"
+    },
+    {
+      "id": "C-009",
+      "kind": "Open question",
+      "statement": "Determine whether the platform can perform the CTA reconciliation currently done outside the system.",
+      "recordOrigin": "derived_from_explicit_uncertainty",
+      "evidence": [
+        {
+          "ref": "1df000041775/P-030",
+          "passageId": "P-030",
+          "quote": "The CTA reconciliation is done outside the system and it takes two days."
+        },
+        {
+          "ref": "1df000041775/P-031",
+          "passageId": "P-031",
+          "quote": "Should the system do it?"
+        },
+        {
+          "ref": "1df000041775/P-032",
+          "passageId": "P-032",
+          "quote": "I assume so, but I don't know what the platform supports. I'd want someone to check before we commit."
+        }
+      ],
+      "owner": {
+        "reportedRole": null,
+        "resolvedPerson": null,
+        "ref": null
+      },
+      "routingSuggestion": {
+        "role": "Group controller",
+        "basis": "Raised the question in P-030 and P-032"
+      },
+      "dueDate": null,
+      "dueCondition": "before we commit",
+      "missingFields": [
+        "owner"
+      ],
+      "uncertainties": [
+        "'I assume so' is an unverified assumption, not a requirement.",
+        "'Someone' is not a named owner.",
+        "What 'commit' refers to (platform selection, scope baseline) was not stated."
+      ],
+      "evidenceStatus": "Reported",
+      "annotationReview": "candidate",
+      "businessApproval": "not_evidenced"
+    }
+  ],
+  "rejected": [],
+  "contentHash": "14822dfcbfe967dca5b746fcde6f33ca1434a99fb1730f56b3d39269195b871b"
+}
