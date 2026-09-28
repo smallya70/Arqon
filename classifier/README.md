@@ -72,10 +72,46 @@ asking whether Vietnam was corrected is not asserting that it was.
 record nobody approved, and the adapter refuses to carry the states across.
 A test asserts this.
 
+## The CLI
+
+    node arqon.js prepare  <source> --out prompt.txt [--workshop W-049]
+    node arqon.js ingest   <response.json> --transcript <source> [--model "..."]
+    node arqon.js evaluate <set-id|response.json> --reference <reference.json>
+    node arqon.js list
+
+`prepare` writes the extraction prompt: transcript, policy, output contract.
+**The reference answers are never in it** — a prompt containing the expected
+records measures obedience, not extraction. A test asserts that no reference
+statement or record id appears.
+
+`ingest` reads a saved reply, fills the provenance the adapter can attest to,
+runs the contract gate, and saves what passes as `awaiting_review`. Rejected
+candidates are kept alongside, not discarded: a reviewer needs to see what was
+refused. The store has no way to write an approved state.
+
+The provider is separable. `providers/manual.js` implements `prepare`, `ingest`
+and `provenance`; an API adapter implements the same three and nothing
+downstream changes. The manual adapter reports its model as "supplied by a
+person; not observed by the tool", because that is all it knows.
+
+## Evaluation is coverage, not accuracy
+
+`evaluate` counts obligations nobody extracted, candidates citing passages the
+reference does not use, kind and requirement-type disagreements, and unsupported
+fields. It does not produce a percentage and cannot: one synthetic transcript,
+reviewed non-blind, with no Decisions, Assumptions, Risks or Exceptions in it.
+The report names those absent kinds every time it runs.
+
+Segmentation is not scored. Matching is by passage overlap, so a candidate
+covering three reference records, or three covering one, is counted as covering
+what it cites. Fourteen is the reference's decomposition, not a target.
+
 ## Not built here
 
-The classifier itself, and the review queue with local persistence
-(deliverables 2 second half, and 3). Provider adapters stay separable.
+The review queue and its operations — accept, edit, reject, defer with change
+history (deliverable 3). One register feeding both views (deliverable 4). A
+direct API adapter, which should come after the absent kinds and a held-out
+transcript exist.
 
 No accuracy claim is made or supportable: the reference is one synthetic
 transcript, reviewed non-blind, with no Decisions, Assumptions or Exceptions in
