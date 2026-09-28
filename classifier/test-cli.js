@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { writeFileSync, rmSync, readFileSync, existsSync, readdirSync } from "node:fs";
 import { loadReference, toCandidates } from "./fixture.js";
 import { buildPrompt, PROMPT_VERSION } from "./prompt.js";
-import { evaluate } from "./evaluate.js";
+import { shortlist, worksheet, confirm } from "./evaluate.js";
 import * as manual from "./providers/manual.js";
 
 let fail = 0;
@@ -83,33 +83,49 @@ t("the store has no approved state anywhere",
   !JSON.stringify(stored).includes('"Approved"'));
 t("rejected candidates are kept, not dropped", Array.isArray(stored.rejected));
 
-console.log("\nevaluation counts coverage, not accuracy");
-const ev = evaluate({ candidates: stored.accepted }, raw);
-t("every obligation covered when the reference is fed back",
-  ev.counts.obligationsMissed === 0, JSON.stringify(ev.counts));
-t("no kind disagreements", ev.counts.kindDisagreements === 0);
-t("the note refuses an accuracy claim", /Not an accuracy measure/.test(ev.basis.note));
+console.log("\npassage overlap is a shortlist, not coverage");
+const s = shortlist({ candidates: stored.accepted }, raw);
+t("no coverage figure is produced",
+  !("obligationsCovered" in s.countable) && !("coverage" in s));
+t("the note refuses an accuracy claim", /No accuracy figure is produced/.test(s.basis.note));
+t("it says overlap is a shortlist", /shortlist, not coverage/.test(s.basis.note));
 t("absent kinds are named",
-  ev.basis.kindsAbsentFromReference.join() === "Decision,Assumption,Risk,Exception");
-const partial = evaluate({ candidates: stored.accepted.slice(0, 5) }, raw);
-t("a partial set leaves obligations missed",
-  partial.missed.length > 0 && partial.missed.length < raw.records.length,
-  String(partial.missed.length));
-t("the missed list names them", partial.missed.every(m => m.id && m.statement));
-/* One candidate citing the passages of three reference records covers all three:
-   merging is not penalised, which is the point of not scoring segmentation. */
-const merged = evaluate({ candidates: [{ id: "M-1", kind: "Requirement",
-  evidence: raw.records.slice(0, 3).flatMap(r => r.evidence.map(e => ({ ref: e.ref }))) }] }, raw);
-const mergedIds = raw.records.slice(0, 3).map(r => r.id);
-t("merging covers every obligation whose passages it cites",
-  mergedIds.every(id => !merged.missed.some(m => m.id === id)),
-  `missed: ${merged.missed.map(m => m.id).join(",")}`);
-/* It also covers A-017, which shares P-010 — passage overlap, not record count,
-   is what coverage means here. */
-t("and any other obligation sharing those passages",
-  merged.counts.obligationsCovered >= mergedIds.length,
-  `covered ${merged.counts.obligationsCovered}`);
-t("and is not counted as extra", merged.counts.candidatesNotInReference === 0);
+  s.basis.kindsAbsentFromReference.join() === "Decision,Assumption,Risk,Exception");
+
+/* A-001 and A-002 both rest on P-009, so each shortlists both candidates.
+   That ambiguity is the reason this cannot be counted automatically. */
+const a1 = s.rows.find(r => r.obligation === "A-001");
+t("one obligation can shortlist several candidates", a1.shortlisted.length > 1,
+  String(a1.shortlisted.length));
+t("shared passages are shown for the check",
+  a1.shortlisted.every(c => c.sharedPassages.length > 0));
+
+const partial = shortlist({ candidates: stored.accepted.slice(0, 5) }, raw);
+t("obligations with no candidate citing their evidence are countable",
+  partial.countable.obligationsWithNoCandidateCitingTheirEvidence > 0);
+t("the rest need a manual check",
+  partial.countable.obligationsNeedingManualCheck > 0);
+
+console.log("\nthe worksheet, and counts only after it is marked");
+const ws = worksheet(s);
+t("every shortlisted pair gets a line", ws.split("\n").filter(l => /^\| \? \|/.test(l)).length
+  === s.rows.reduce((n, r) => n + r.shortlisted.length, 0));
+t("obligations with nothing shortlisted are shown too", /\(none cite its evidence\)/.test(ws) ||
+  s.rows.every(r => r.shortlisted.length));
+t("it explains why this is manual", /Sharing a passage is not capturing an obligation/.test(ws));
+
+const unmarked = confirm(s, ws);
+t("an unmarked worksheet reports nothing captured", unmarked.counts.obligationsCaptured === 0);
+t("and says the counts are incomplete", !unmarked.complete && /unmarked/.test(unmarked.note));
+
+const allYes = confirm(s, ws.replace(/^\| \? \|/gm, "| y |"));
+t("marking captures them", allYes.counts.obligationsCaptured > 0);
+t("and completes", allYes.complete);
+const allNo = confirm(s, ws.replace(/^\| \? \|/gm, "| n |"));
+t("marking n counts them as missed",
+  allNo.counts.obligationsMissed === raw.records.length, String(allNo.counts.obligationsMissed));
+t("with the reason recorded",
+  allNo.missed.every(m => /do not capture it|no candidate cites/.test(m.why)));
 
 console.log("\n" + (fail ? fail + " FAILED" : "ALL PASS"));
 rmSync(STORE, { recursive: true, force: true });

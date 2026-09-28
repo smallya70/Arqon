@@ -94,17 +94,29 @@ and `provenance`; an API adapter implements the same three and nothing
 downstream changes. The manual adapter reports its model as "supplied by a
 person; not observed by the tool", because that is all it knows.
 
-## Evaluation is coverage, not accuracy
+## Evaluation: a shortlist, then a human
 
-`evaluate` counts obligations nobody extracted, candidates citing passages the
-reference does not use, kind and requirement-type disagreements, and unsupported
-fields. It does not produce a percentage and cannot: one synthetic transcript,
-reviewed non-blind, with no Decisions, Assumptions, Risks or Exceptions in it.
-The report names those absent kinds every time it runs.
+Passage overlap is not coverage. Two candidates can both cite P-009 and capture
+entirely different obligations from it — one the rate rule, one the override
+prohibition. So `evaluate` produces a shortlist and a worksheet, and refuses to
+report coverage until a person has marked it.
 
-Segmentation is not scored. Matching is by passage overlap, so a candidate
-covering three reference records, or three covering one, is counted as covering
-what it cites. Fourteen is the reference's decomposition, not a target.
+    node arqon.js evaluate <set> --reference <ref>                    # shortlist + worksheet
+    node arqon.js evaluate <set> --reference <ref> --confirmed ws.md  # counts
+
+Countable without judgement: obligations no candidate even cites the evidence
+for; candidates citing passages the reference does not use; unsupported fields;
+citations that do not resolve.
+
+Not countable: whether a shortlisted candidate captures the obligation, and
+whether a kind disagreement is an error or a defensible reading.
+
+An unmarked worksheet reports zero captured and says the counts are incomplete.
+No percentage is produced at any point.
+
+Candidates citing passages the reference does not use are **not** errors. The
+reference is one reviewer's reading; a supported record it did not retain may
+still be right.
 
 ## Message record
 
@@ -120,21 +132,16 @@ from someone's sent items.
     node arqon.js history <record-id>
     node arqon.js outbox
 
-Three events, three authors, never collapsed:
+Three events, three authors, never collapsed: **sent** put a question to someone
+covering named records; **reply** is what came back, which is evidence; a
+**resolution** is someone with authority deciding the question is closed.
 
-| Event | What it is |
-|---|---|
-| sent | A question was put to someone, covering named records |
-| reply | Something came back. Evidence, not an answer |
-| resolution | Someone with authority decided the question is closed |
-
-**A reply does not close anything.** `history` reports "replied, unresolved"
-and says so. A resolution requires who decided and on what authority, because a
-reply from someone without authority over the subject settles nothing — and a
-system that resolves on reply accumulates decisions nobody made.
+A reply does not close anything. `history` reports "replied, unresolved" and
+says so. A resolution requires who decided and on what authority, because a
+reply from someone without authority over the subject settles nothing.
 
 A manual send is recorded as a claim: "reported by the sender; the tool did not
-send or observe this message". When Graph sends it, the attestation changes and
+send or observe this message". When Graph sends it, that attestation changes and
 the rest of the shape does not.
 
 ## Not built here

@@ -10,13 +10,13 @@
    response. An API adapter later implements the same two steps and everything
    downstream is unchanged. */
 
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, writeFileSync } from "node:fs";
 import { structure } from "./core.js";
 import { buildPrompt, PROMPT_VERSION } from "./prompt.js";
 import * as manual from "./providers/manual.js";
 import { validate } from "./validate.js";
 import { save, list, load } from "./store.js";
-import { evaluate } from "./evaluate.js";
+import { shortlist, worksheet, confirm } from "./evaluate.js";
 import { recordSent, recordReply, recordResolution, list as outbox, historyFor } from "./outbox.js";
 import { sha256 } from "./manifest.js";
 import { POLICY } from "./contract.js";
@@ -106,37 +106,53 @@ if (verb === "prepare") {
   if (existsSync(target) && target.endsWith(".json")) {
     const j = JSON.parse(readFileSync(target, "utf8"));
     candidates = j.candidates ? j : { candidates: j.accepted ?? [] };
+  } else candidates = { candidates: load(target).accepted };
+
+  const s = shortlist(candidates, reference);
+
+  /* With a marked worksheet, report final counts. Without one, produce the
+     worksheet and refuse to report coverage. */
+  const marked = flag("confirmed");
+  if (marked) {
+    const c = confirm(s, readFileSync(marked, "utf8"));
+    console.log(`\nCAPTURE against ${c.basis.reference}`);
+    for (const [k, v] of Object.entries(c.counts)) console.log(`  ${k.padEnd(42)} ${v}`);
+    if (c.missed.length) {
+      console.log(`\n  obligations not captured:`);
+      c.missed.forEach(m => console.log(`    ${m.obligation} (${m.kind}) — ${m.why}`));
+    }
+    if (c.unchecked.length) console.log(`\n  unmarked: ${c.unchecked.join(", ")}`);
+    console.log(`\n  ${c.note}`);
+    console.log(`  ${c.basis.note}`);
+    if (c.basis.kindsAbsentFromReference.length)
+      console.log(`  Absent from the reference entirely: ${c.basis.kindsAbsentFromReference.join(", ")}.\n`);
   } else {
-    const set = load(target);
-    candidates = { candidates: set.accepted };
+    const out = flag("worksheet", "capture-check.md");
+    writeFileSync(out, worksheet(s));
+    console.log(`\nSHORTLIST against ${s.basis.reference}`);
+    console.log(`  reference obligations  ${s.basis.referenceObligations}`);
+    console.log(`  candidates             ${s.basis.candidates}\n`);
+    for (const [k, v] of Object.entries(s.countable)) console.log(`  ${k.padEnd(50)} ${v}`);
+    const none = s.rows.filter(r => r.noCandidateCitesTheEvidence);
+    if (none.length) {
+      console.log(`\n  no candidate cites the evidence for:`);
+      none.forEach(r => console.log(`    ${r.obligation} (${r.kind}) ${r.statement.slice(0, 66)}`));
+    }
+    if (s.outside.length) {
+      console.log(`\n  candidates citing passages the reference does not use:`);
+      s.outside.forEach(c => console.log(`    ${c.id} (${c.kind}) ${c.statement.slice(0, 62)}`));
+    }
+    if (s.unsupported.length) {
+      console.log(`\n  unsupported fields:`);
+      s.unsupported.forEach(u => console.log(`    ${u.candidate} ${u.field} = ${u.value}`));
+    }
+    console.log(`\n  worksheet  ${out}`);
+    console.log(`  Coverage is NOT reported. Passage overlap is a shortlist; mark the worksheet`);
+    console.log(`  by hand, then:  node arqon.js evaluate ${target} --reference ${refPath} --confirmed ${out}\n`);
+    console.log(`  ${s.basis.note}`);
+    if (s.basis.kindsAbsentFromReference.length)
+      console.log(`  Absent from the reference entirely: ${s.basis.kindsAbsentFromReference.join(", ")}.\n`);
   }
-  const r = evaluate(candidates, reference);
-  console.log(`\nCOVERAGE against ${r.basis.reference}`);
-  console.log(`  reference records   ${r.basis.referenceRecords}`);
-  console.log(`  candidates          ${r.basis.candidates}\n`);
-  for (const [k, v] of Object.entries(r.counts))
-    console.log(`  ${k.padEnd(30)} ${v}`);
-  if (r.missed.length) {
-    console.log(`\n  obligations nobody extracted:`);
-    r.missed.forEach(m => console.log(`    ${m.id} (${m.kind}) ${m.statement.slice(0, 74)}`));
-  }
-  if (r.kindDisagreements.length) {
-    console.log(`\n  kind disagreements:`);
-    r.kindDisagreements.forEach(d =>
-      console.log(`    ${d.reference} reference=${d.referenceKind} candidate=${d.candidateKinds.join("/")}`));
-  }
-  if (r.unsupported.length) {
-    console.log(`\n  unsupported fields:`);
-    r.unsupported.forEach(u => console.log(`    ${u.candidate} ${u.field} = ${u.value}`));
-  }
-  if (r.unmatched.length) {
-    console.log(`\n  candidates citing passages the reference does not use:`);
-    r.unmatched.forEach(u => console.log(`    ${u.id} (${u.kind}) ${u.statement.slice(0, 66)}`));
-  }
-  console.log(`\n  ${r.basis.note}`);
-  if (r.basis.kindsAbsentFromReference.length)
-    console.log(`  Absent from the reference entirely: ${r.basis.kindsAbsentFromReference.join(", ")}.` +
-                ` Nothing here measures those kinds.\n`);
 
 } else if (verb === "sent") {
   /* Log a message a person sent. The tool did not send it and says so. */
@@ -219,6 +235,7 @@ ARQON local extraction CLI — no network, no credentials.
   node arqon.js prepare  <source> --out prompt.txt [--workshop W-049]
   node arqon.js ingest   <response.json> --transcript <source> [--model "..."]
   node arqon.js evaluate <set-id|response.json> --reference <reference.json>
+                         [--worksheet capture-check.md] [--confirmed capture-check.md]
   node arqon.js list
 
 <source> is a transcript .txt, or a reference pack JSON carrying source.rawText.
